@@ -14,42 +14,7 @@ export function createPeer(options: PeerOptions): Peer.Instance {
     initiator: options.initiator, 
     trickle: true, // Enable trickle ICE for better connectivity
     config: {
-      iceServers: [
-        // STUN servers for discovering public IP
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' },
-        { urls: 'stun:stun.cloudflare.com:3478' },
-        
-        // TURN servers for NAT traversal (relay when direct connection fails)
-        { 
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject', 
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        // Additional TURN servers for better reliability
-        {
-          urls: 'turn:relay1.expressturn.com:3478',
-          username: 'ef3CYGNUS',
-          credential: 'YnJOZX28P7X22GGQ'
-        },
-        {
-          urls: 'turn:numb.viagenie.ca',
-          username: 'webrtc@live.com',
-          credential: 'muazkh'
-        }
-      ],
+      iceServers: [],
       iceCandidatePoolSize: 10,
       iceTransportPolicy: 'all' // Allow both direct and relay connections
     }
@@ -65,10 +30,30 @@ export function createPeer(options: PeerOptions): Peer.Instance {
   
   peer.on('iceStateChange', (iceConnectionState: string, iceGatheringState: string) => {
     console.log(`🧊 ICE State: ${iceConnectionState}, Gathering: ${iceGatheringState}`);
+    
+    if (iceConnectionState === 'failed') {
+      console.log('❌ ICE connection failed - trying to restart');
+      // peer._pc.restartIce(); // Restart ICE if supported
+    }
+    
+    if (iceConnectionState === 'disconnected') {
+      console.log('⚠️ ICE connection disconnected');
+    }
   });
   
   peer.on('signalingStateChange', (state: string) => {
     console.log(`📡 Signaling State: ${state}`);
+  });
+
+  // Log ICE candidates for debugging
+  (peer as any)._pc.addEventListener('icecandidateerror', (event: any) => {
+    console.log('❌ ICE Candidate Error:', event.errorText, event.url);
+  });
+  
+  (peer as any)._pc.addEventListener('icecandidate', (event: any) => {
+    if (event.candidate) {
+      console.log('🧊 ICE Candidate:', event.candidate.type, event.candidate.address || 'relay');
+    }
   });
   
   if (options.onData) {
@@ -82,6 +67,35 @@ export function createPeer(options: PeerOptions): Peer.Instance {
   if (options.onError) {
     peer.on('error', options.onError);
   }
+
+  // Add ICE connection timeout for better error handling
+  let iceTimeout: NodeJS.Timeout;
+  const startTime = Date.now();
+  
+  peer.on('iceStateChange', (iceConnectionState: string) => {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`🧊 ICE State after ${elapsed}s: ${iceConnectionState}`);
+    
+    if (iceConnectionState === 'checking') {
+      console.log('⏳ ICE checking started - waiting for connection...');
+      // Start 30 second timeout for ICE to connect (doubled from 15s)
+      iceTimeout = setTimeout(() => {
+        if (!peer.connected && !peer.destroyed) {
+          console.warn('⏰ ICE timeout - connection took too long (30s)');
+          console.log('🔍 Try: 1) Refresh both tabs 2) Check same WiFi 3) Disable VPN');
+          options.onError?.(new Error('Connection timeout (30s) - try refreshing both tabs or check network'));
+        }
+      }, 30000);
+    } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
+      console.log('🎉 ICE connection established!');
+      clearTimeout(iceTimeout);
+    } else if (iceConnectionState === 'failed') {
+      console.log('❌ ICE connection failed');
+      clearTimeout(iceTimeout);
+    } else if (iceConnectionState === 'disconnected') {
+      console.log('⚠️ ICE connection lost - might reconnect...');
+    }
+  });
 
   return peer;
 }

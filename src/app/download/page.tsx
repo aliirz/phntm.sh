@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import FileReceiver from '@/components/FileReceiver';
 import { createPeer } from '@/lib/peer';
 import { importKey, decryptFile } from '@/lib/encryption';
-import { sendSignal, subscribeToRoom, testConnection } from '@/lib/signal';
+import { sendSignal, subscribeToRoom, testConnection, getExistingSignals, type SignalPolling } from '../../lib/signal';
 import { parseShareUrl, downloadBlob } from '@/lib/utils';
 import type Peer from 'simple-peer';
 
@@ -26,14 +26,19 @@ export default function DownloadPage() {
   
   const peerRef = useRef<Peer.Instance | null>(null);
   const roomIdRef = useRef<string>('');
+  const receiverIdRef = useRef<string>('');
   const encryptionKeyRef = useRef<CryptoKey | null>(null);
-  const channelRef = useRef<ReturnType<typeof subscribeToRoom> | null>(null);
+  const pollingRef = useRef<SignalPolling | null>(null);
   const fileBufferRef = useRef<Uint8Array[]>([]);
   const metadataRef = useRef<FileMetadata | null>(null);
   const receivedChunksRef = useRef<number>(0);
+  const processedSignalsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    // Test Supabase connection first
+    // Generate unique receiver ID for this session
+    receiverIdRef.current = 'receiver_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Test Edge Functions connection first
     testConnection().then(connected => {
       if (!connected) {
         setError('Cannot connect to signaling server. Please check your internet connection.');
@@ -66,8 +71,8 @@ export default function DownloadPage() {
       if (peerRef.current) {
         peerRef.current.destroy();
       }
-      if (channelRef.current) {
-        channelRef.current.unsubscribe();
+      if (pollingRef.current) {
+        pollingRef.current.stop();
       }
     };
   }, []);
@@ -90,9 +95,52 @@ export default function DownloadPage() {
       return;
     }
 
+    console.log('🚀 DOWNLOAD START INITIATED');
+    console.log(`🎯 Room ID: ${roomIdRef.current}`);
+    console.log(`🎯 Receiver ID: ${receiverIdRef.current}`);
+    console.log(`🔑 Encryption key exists: ${!!encryptionKeyRef.current}`);
+
     try {
+      console.log(`🎯 Joining room: ${roomIdRef.current}`);
+      console.log('🔄 Starting WebRTC connection as joiner');
+      
       setStatus('connecting');
       setError('');
+
+      // Test Edge Functions connection first
+      console.log('🧪 Testing Edge Functions connection for receiver...');
+      const connected = await testConnection();
+      if (!connected) {
+        setError('Cannot connect to signaling server. Please check your internet connection.');
+        setStatus('error');
+        return;
+      }
+      console.log('✅ Edge Functions connection confirmed');
+
+      // Subscribe to room using Edge Functions polling
+      console.log(`🔌 Starting Edge Functions polling for room: ${roomIdRef.current}`);
+      const polling = subscribeToRoom(roomIdRef.current, receiverIdRef.current, (data: unknown) => {
+        const signalType = (data as { type?: string })?.type;
+        const signalHash = JSON.stringify(data);
+        
+        // Skip answer signals (sent by joiner) and already processed signals
+        if (signalType === 'answer' || processedSignalsRef.current.has(signalHash)) {
+          console.log('⏩ Skipping NEW ' + signalType + ' signal (sent by joiner)');
+          return;
+        }
+        
+        console.log('🔄 Receiver received NEW signal:', signalType);
+        try {
+          if (peerRef.current) {
+            peerRef.current.signal(data as any);
+            processedSignalsRef.current.add(signalHash);
+          }
+        } catch (err) {
+          console.error('❌ Failed to process signal:', err);
+        }
+      });
+      pollingRef.current = polling;
+      console.log('✅ Edge Functions polling started');
 
       // Set connection timeout
       const connectionTimeout = setTimeout(() => {
@@ -105,12 +153,28 @@ export default function DownloadPage() {
         }
       }, 30000); // 30 seconds timeout
 
+      // Fetch existing signals
+      const existingSignals = await getExistingSignals(roomIdRef.current, receiverIdRef.current);
+
       // Set up WebRTC peer (not initiator)
+      console.log('🎯 Creating peer as joiner...');
       const peer = createPeer({
         initiator: false,
-        onSignal: (data) => {
-          console.log('🔄 Receiver sending signal:', (data as { type?: string })?.type);
-          sendSignal(roomIdRef.current, data as any);
+        onSignal: async (data) => {
+          const signalType = (data as { type?: string })?.type;
+          console.log('📤 RECEIVER sending signal:', signalType);
+          console.log('📤 Signal details:', JSON.stringify(data).substring(0, 100) + '...');
+          try {
+            if (signalType === 'offer') {
+              await sendSignal(roomIdRef.current, 'offer', data, receiverIdRef.current);
+            } else if (signalType === 'answer') {
+              await sendSignal(roomIdRef.current, 'answer', data, receiverIdRef.current);
+            } else {
+              await sendSignal(roomIdRef.current, 'ice-candidate', data, receiverIdRef.current);
+            }
+          } catch (err) {
+            console.error('❌ Failed to send signal:', err);
+          }
         },
         onConnect: () => {
           console.log('🎉 Peer connected successfully!');
@@ -156,14 +220,30 @@ export default function DownloadPage() {
       });
 
       peerRef.current = peer;
+      console.log('✅ Peer created successfully');
 
-      // Subscribe to signaling
-      const channel = subscribeToRoom(roomIdRef.current, (data) => {
-        console.log('Received signal:', (data as { type?: string })?.type);
-        peer.signal(data as any);
-      });
-      
-      channelRef.current = channel;
+      // Process existing signals
+      console.log('🔄 Processing existing signals...');
+      for (const signal of existingSignals) {
+        const signalType = (signal as { type?: string })?.type;
+        const signalHash = JSON.stringify(signal);
+        
+        // Skip answer signals (sent by joiner) and already processed signals
+        if (signalType === 'answer' || processedSignalsRef.current.has(signalHash)) {
+          console.log('⏩ Skipping ' + signalType + ' signal (sent by joiner)');
+          continue;
+        }
+        
+        console.log('📨 Processing existing signal:', signalType);
+        try {
+          peer.signal(signal as any);
+          processedSignalsRef.current.add(signalHash);
+        } catch (err) {
+          console.error('❌ Failed to process existing signal:', err);
+        }
+      }
+
+      console.log('📊 Peer state: connected=' + peer.connected + ', destroyed=' + peer.destroyed);
 
     } catch (err) {
       console.error('Download error:', err);
@@ -218,15 +298,16 @@ export default function DownloadPage() {
       peerRef.current = null;
     }
     
-    if (channelRef.current) {
-      channelRef.current.unsubscribe();
-      channelRef.current = null;
+    if (pollingRef.current) {
+      pollingRef.current.stop();
+      pollingRef.current = null;
     }
     
     // Clear buffers
     fileBufferRef.current = [];
     metadataRef.current = null;
     receivedChunksRef.current = 0;
+    processedSignalsRef.current.clear();
     
     console.log('🔄 Retrying connection...');
   };
@@ -261,7 +342,7 @@ export default function DownloadPage() {
               • This file is encrypted end-to-end using AES-256 encryption
             </p>
             <p>
-                             • The encryption key is only in your browser and the sender&apos;s browser
+              • The encryption key is only in your browser and the sender&apos;s browser
             </p>
             <p>
               • No servers store your file or encryption key

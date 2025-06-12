@@ -22,14 +22,17 @@ export function parseShareUrl(url: string): { roomId: string; key: string } | nu
     const params = new URLSearchParams(fragment);
     
     const roomId = params.get('room');
-    const key = params.get('key');
+    let key = params.get('key');
     
     if (roomId && key) {
+      // Decode any URL encoding that might have happened
+      key = decodeURIComponent(key);
       return { roomId, key };
     }
     
     return null;
-  } catch {
+  } catch (error) {
+    console.error('Failed to parse share URL:', error);
     return null;
   }
 }
