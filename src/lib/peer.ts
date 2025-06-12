@@ -37,6 +37,17 @@ export function createPeer(options: PeerOptions): Peer.Instance {
           urls: 'turn:openrelay.metered.ca:443?transport=tcp',
           username: 'openrelayproject',
           credential: 'openrelayproject'
+        },
+        // Additional TURN servers for better reliability
+        {
+          urls: 'turn:relay1.expressturn.com:3478',
+          username: 'ef3CYGNUS',
+          credential: 'YnJOZX28P7X22GGQ'
+        },
+        {
+          urls: 'turn:numb.viagenie.ca',
+          username: 'webrtc@live.com',
+          credential: 'muazkh'
         }
       ],
       iceCandidatePoolSize: 10,
@@ -46,9 +57,19 @@ export function createPeer(options: PeerOptions): Peer.Instance {
 
   peer.on('signal', options.onSignal);
   
-  if (options.onConnect) {
-    peer.on('connect', options.onConnect);
-  }
+  // Add detailed ICE connection state logging
+  peer.on('connect', () => {
+    console.log('🎉 WebRTC connection established!');
+    if (options.onConnect) options.onConnect();
+  });
+  
+  peer.on('iceStateChange', (iceConnectionState: string, iceGatheringState: string) => {
+    console.log(`🧊 ICE State: ${iceConnectionState}, Gathering: ${iceGatheringState}`);
+  });
+  
+  peer.on('signalingStateChange', (state: string) => {
+    console.log(`📡 Signaling State: ${state}`);
+  });
   
   if (options.onData) {
     peer.on('data', options.onData);
