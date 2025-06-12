@@ -148,7 +148,7 @@ export default function TestPage() {
 
       addLog(`✅ Peer created successfully`);
 
-      // Process existing signals for joiners
+            // Process existing signals for joiners
       if (!isInitiator) {
         addLog(`🔄 Processing existing signals...`);
         try {
@@ -160,15 +160,23 @@ export default function TestPage() {
             .order('created_at', { ascending: true });
 
           if (existingSignals && existingSignals.length > 0) {
-                         for (const signal of existingSignals) {
-               const signalType = (signal.message as { type?: string })?.type || 'unknown';
-               addLog(`📨 Processing existing signal: ${signalType}`);
-               try {
-                 peer.signal(signal.message as any);
-               } catch (error) {
-                 addLog(`❌ Error processing signal: ${error}`);
-               }
-             }
+            for (const signal of existingSignals) {
+              const signalType = (signal.message as { type?: string })?.type || 'unknown';
+              
+              // Joiners should only process 'offer' and 'candidate' signals from initiator
+              // Skip 'answer' signals (those are sent by joiners, not received)
+              if (signalType === 'answer') {
+                addLog(`⏩ Skipping ${signalType} signal (sent by joiner)`);
+                continue;
+              }
+              
+              addLog(`📨 Processing existing signal: ${signalType}`);
+              try {
+                peer.signal(signal.message as any);
+              } catch (error) {
+                addLog(`❌ Error processing signal: ${error}`);
+              }
+            }
           }
         } catch (error) {
           addLog(`❌ Failed to process existing signals: ${error}`);
