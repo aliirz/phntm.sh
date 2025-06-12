@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+
 import FileUploader from '@/components/FileUploader';
 import { createPeer, sendFileChunks } from '@/lib/peer';
 import { generateAESKey, encryptFile, exportKey } from '@/lib/encryption';
@@ -12,16 +12,14 @@ import type Peer from 'simple-peer';
 type UploadStatus = 'idle' | 'uploading' | 'waiting' | 'connected' | 'error';
 
 export default function UploadPage() {
-  const router = useRouter();
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [error, setError] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const peerRef = useRef<Peer.Instance | null>(null);
   const roomIdRef = useRef<string>('');
   const encryptedFileRef = useRef<ArrayBuffer | null>(null);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<ReturnType<typeof subscribeToRoom> | null>(null);
 
   useEffect(() => {
     // Cleanup on unmount
@@ -40,7 +38,6 @@ export default function UploadPage() {
 
   const handleFileSelect = async (file: File) => {
     try {
-      setSelectedFile(file);
       setStatus('uploading');
       setError('');
 
@@ -62,7 +59,7 @@ export default function UploadPage() {
       const peer = createPeer({
         initiator: true,
         onSignal: (data) => {
-          console.log('🔄 Sender sending signal:', data.type);
+          console.log('🔄 Sender sending signal:', (data as { type?: string })?.type);
           sendSignal(roomId, data);
         },
         onConnect: () => {
@@ -104,9 +101,9 @@ export default function UploadPage() {
 
       // Subscribe to signaling
       const channel = subscribeToRoom(roomId, (data) => {
-        console.log('🔄 Sender received signal:', data.type);
+        console.log('🔄 Sender received signal:', (data as { type?: string })?.type);
         clearTimeout(waitingTimeout);
-        peer.signal(data);
+        peer.signal(data as any);
       });
       
       channelRef.current = channel;
@@ -158,7 +155,7 @@ export default function UploadPage() {
             </li>
             <li className="flex items-start space-x-3">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">4</span>
-              <span>The file is decrypted only on the recipient's device</span>
+                             <span>The file is decrypted only on the recipient&apos;s device</span>
             </li>
           </ol>
         </div>

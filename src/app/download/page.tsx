@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+
 import FileReceiver from '@/components/FileReceiver';
 import { createPeer } from '@/lib/peer';
 import { importKey, decryptFile } from '@/lib/encryption';
@@ -18,7 +18,6 @@ interface FileMetadata {
 }
 
 export default function DownloadPage() {
-  const router = useRouter();
   const [status, setStatus] = useState<DownloadStatus>('idle');
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
@@ -28,7 +27,7 @@ export default function DownloadPage() {
   const peerRef = useRef<Peer.Instance | null>(null);
   const roomIdRef = useRef<string>('');
   const encryptionKeyRef = useRef<CryptoKey | null>(null);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<ReturnType<typeof subscribeToRoom> | null>(null);
   const fileBufferRef = useRef<Uint8Array[]>([]);
   const metadataRef = useRef<FileMetadata | null>(null);
   const receivedChunksRef = useRef<number>(0);
@@ -110,8 +109,8 @@ export default function DownloadPage() {
       const peer = createPeer({
         initiator: false,
         onSignal: (data) => {
-          console.log('🔄 Receiver sending signal:', data.type);
-          sendSignal(roomIdRef.current, data);
+          console.log('🔄 Receiver sending signal:', (data as { type?: string })?.type);
+          sendSignal(roomIdRef.current, data as any);
         },
         onConnect: () => {
           console.log('🎉 Peer connected successfully!');
@@ -160,8 +159,8 @@ export default function DownloadPage() {
 
       // Subscribe to signaling
       const channel = subscribeToRoom(roomIdRef.current, (data) => {
-        console.log('Received signal:', data);
-        peer.signal(data);
+        console.log('Received signal:', (data as { type?: string })?.type);
+        peer.signal(data as any);
       });
       
       channelRef.current = channel;
@@ -262,7 +261,7 @@ export default function DownloadPage() {
               • This file is encrypted end-to-end using AES-256 encryption
             </p>
             <p>
-              • The encryption key is only in your browser and the sender's browser
+                             • The encryption key is only in your browser and the sender&apos;s browser
             </p>
             <p>
               • No servers store your file or encryption key

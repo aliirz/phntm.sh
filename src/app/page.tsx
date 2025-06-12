@@ -88,7 +88,7 @@ export default function HomePage() {
                 <span className="text-blue-600 font-bold">1</span>
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Upload & Encrypt</h4>
-              <p className="text-sm text-gray-600">Select your file and it's encrypted locally</p>
+              <p className="text-sm text-gray-600">Select your file and it&apos;s encrypted locally</p>
             </div>
 
             <div className="text-center">

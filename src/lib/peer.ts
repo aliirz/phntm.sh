@@ -2,7 +2,7 @@ import Peer from 'simple-peer';
 
 export interface PeerOptions {
   initiator: boolean;
-  onSignal: (data: any) => void;
+  onSignal: (data: unknown) => void;
   onConnect?: () => void;
   onData?: (data: Uint8Array) => void;
   onClose?: () => void;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { sendSignal, subscribeToRoom, testConnection } from '@/lib/signal';
 import { createPeer } from '@/lib/peer';
 import { generateRoomId } from '@/lib/utils';
@@ -56,16 +56,16 @@ export default function TestPage() {
       }
       addLog(`✅ Supabase connection confirmed`);
 
-      let peer: any = null;
+      let peer: ReturnType<typeof createPeer> | null = null;
 
       // Subscribe to signaling first
       addLog(`🔌 Attempting to subscribe to room: ${roomId}`);
       
       const channel = subscribeToRoom(roomId, (data) => {
-        addLog(`📨 Received signal: ${data.type}`);
+        addLog(`📨 Received signal: ${(data as { type?: string })?.type}`);
         if (peer) {
           try {
-            peer.signal(data);
+            peer.signal(data as any);
           } catch (error) {
             addLog(`❌ Error processing signal: ${error}`);
           }
@@ -115,7 +115,7 @@ export default function TestPage() {
       peer = createPeer({
         initiator: isInitiator,
         onSignal: (data) => {
-          addLog(`📤 Sending signal: ${data.type}`);
+          addLog(`📤 Sending signal: ${(data as { type?: string })?.type}`);
           sendSignal(roomId, data).catch(error => {
             addLog(`❌ Failed to send signal: ${error.message}`);
           });
@@ -160,15 +160,15 @@ export default function TestPage() {
             .order('created_at', { ascending: true });
 
           if (existingSignals && existingSignals.length > 0) {
-            for (const signal of existingSignals) {
-              const signalType = signal.message?.type || 'unknown';
-              addLog(`📨 Processing existing signal: ${signalType}`);
-              try {
-                peer.signal(signal.message);
-              } catch (error) {
-                addLog(`❌ Error processing signal: ${error}`);
-              }
-            }
+                         for (const signal of existingSignals) {
+               const signalType = (signal.message as { type?: string })?.type || 'unknown';
+               addLog(`📨 Processing existing signal: ${signalType}`);
+               try {
+                 peer.signal(signal.message as any);
+               } catch (error) {
+                 addLog(`❌ Error processing signal: ${error}`);
+               }
+             }
           }
         } catch (error) {
           addLog(`❌ Failed to process existing signals: ${error}`);
@@ -279,11 +279,11 @@ export default function TestPage() {
         <div className="mt-8 bg-blue-50 rounded-2xl p-6">
           <h3 className="text-lg font-semibold mb-4">Test Instructions</h3>
           <ol className="space-y-2 text-sm">
-            <li><strong>1.</strong> Click "Test Supabase" to verify database connection</li>
-            <li><strong>2.</strong> Click "Create Room" to generate a room ID</li>
+            <li><strong>1.</strong> Click &quot;Test Supabase&quot; to verify database connection</li>
+            <li><strong>2.</strong> Click &quot;Create Room&quot; to generate a room ID</li>
             <li><strong>3.</strong> Copy the room ID and open this page in another tab</li>
-            <li><strong>4.</strong> In the new tab, paste the room ID and click "Join Room"</li>
-            <li><strong>5.</strong> Click "Start Connection" in both tabs</li>
+            <li><strong>4.</strong> In the new tab, paste the room ID and click &quot;Join Room&quot;</li>
+            <li><strong>5.</strong> Click &quot;Start Connection&quot; in both tabs</li>
             <li><strong>6.</strong> Watch the logs to see the WebRTC handshake</li>
           </ol>
         </div>

@@ -7,11 +7,11 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface SignalMessage {
   room_id: string;
-  message: any;
+  message: unknown;
   created_at?: string;
 }
 
-export function subscribeToRoom(roomId: string, onMessage: (data: any) => void) {
+export function subscribeToRoom(roomId: string, onMessage: (data: unknown) => void) {
   console.log(`🔌 Subscribing to room: ${roomId}`);
   
   const channel = supabase
@@ -41,9 +41,9 @@ export function subscribeToRoom(roomId: string, onMessage: (data: any) => void) 
   return channel;
 }
 
-export async function sendSignal(roomId: string, message: any) {
+export async function sendSignal(roomId: string, message: unknown) {
   try {
-    console.log(`📤 Sending signal to room ${roomId}:`, message.type || 'unknown');
+    console.log(`📤 Sending signal to room ${roomId}:`, (message as { type?: string })?.type || 'unknown');
     
     const { error } = await supabase
       .from('signaling')
@@ -86,7 +86,7 @@ export async function cleanupRoom(roomId: string) {
 export async function testConnection() {
   try {
     console.log('🧪 Testing Supabase connection...');
-    const { data, error } = await supabase.from('signaling').select('id').limit(1);
+    const { error } = await supabase.from('signaling').select('id').limit(1);
     
     if (error) {
       console.error('❌ Supabase connection test failed:', error);
