@@ -16,13 +16,14 @@ export interface SignalPolling {
 /**
  * Production-ready signaling using Edge Functions
  * Polls for new signals every 1 second for reliable delivery
+ * Automatically filters out signals from the current sender to prevent self-processing
  */
 export function subscribeToRoom(
   roomId: string, 
-  senderId: string,
+  currentSenderId: string,
   onMessage: (data: unknown) => void
 ): SignalPolling {
-  console.log(`🔌 Starting signal polling for room: ${roomId}, sender: ${senderId}`);
+  console.log(`🔌 Starting signal polling for room: ${roomId}, sender: ${currentSenderId}`);
   
   let isPolling = true;
   let lastTimestamp = new Date().toISOString();
@@ -33,7 +34,7 @@ export function subscribeToRoom(
     try {
       const url = new URL(`${SUPABASE_URL}/functions/v1/get-signals`);
       url.searchParams.set('room_id', roomId);
-      url.searchParams.set('sender_id', senderId);
+      url.searchParams.set('sender_id', currentSenderId);
       url.searchParams.set('since', lastTimestamp);
       
       const response = await fetch(url.toString(), {
@@ -51,15 +52,24 @@ export function subscribeToRoom(
       const data = await response.json();
       const signals = data.signals || [];
       
-      console.log(`📨 Polled ${signals.length} new signals`);
+      // Filter out signals from the current sender (double protection)
+      const filteredSignals = signals.filter((signal: SignalMessage) => {
+        const shouldInclude = signal.sender_id !== currentSenderId;
+        if (!shouldInclude) {
+          console.log(`🚫 Polling: Filtering out own signal: ${signal.signal_type} from ${signal.sender_id}`);
+        }
+        return shouldInclude;
+      });
       
-      if (signals.length > 0) {
-        // Update timestamp to the latest signal
+      console.log(`📨 Polled ${signals.length} signals, ${filteredSignals.length} after filtering`);
+      
+      if (filteredSignals.length > 0) {
+        // Update timestamp to the latest signal from the original set
         lastTimestamp = signals[signals.length - 1].created_at;
         
-        // Process each signal
-        for (const signal of signals) {
-          console.log(`🎯 Processing signal type: ${signal.signal_type}`);
+        // Process each filtered signal
+        for (const signal of filteredSignals) {
+          console.log(`🎯 Processing signal type: ${signal.signal_type} from ${signal.sender_id}`);
           onMessage(signal.signal_data);
         }
       }
@@ -126,17 +136,18 @@ export async function sendSignal(
 
 /**
  * Get existing signals for a room (used for initial connection setup)
+ * This excludes signals sent by the current peer to prevent self-processing
  */
 export async function getExistingSignals(
   roomId: string, 
-  senderId: string
+  currentSenderId: string
 ): Promise<unknown[]> {
   try {
-    console.log(`🔍 Fetching existing signals for room ${roomId}, excluding sender ${senderId}`);
+    console.log(`🔍 Fetching existing signals for room ${roomId}, excluding sender ${currentSenderId}`);
     
     const url = new URL(`${SUPABASE_URL}/functions/v1/get-signals`);
     url.searchParams.set('room_id', roomId);
-    url.searchParams.set('sender_id', senderId);
+    url.searchParams.set('sender_id', currentSenderId);
     
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -153,8 +164,17 @@ export async function getExistingSignals(
     const data = await response.json();
     const signals = data.signals || [];
     
-    console.log(`📦 Found ${signals.length} existing signals`);
-    return signals.map((signal: SignalMessage) => signal.signal_data);
+    // Filter out signals sent by the current peer (double protection)
+    const filteredSignals = signals.filter((signal: SignalMessage) => {
+      const shouldInclude = signal.sender_id !== currentSenderId;
+      if (!shouldInclude) {
+        console.log(`🚫 Filtering out own signal: ${signal.signal_type} from ${signal.sender_id}`);
+      }
+      return shouldInclude;
+    });
+    
+    console.log(`📦 Found ${signals.length} total signals, ${filteredSignals.length} after filtering`);
+    return filteredSignals.map((signal: SignalMessage) => signal.signal_data);
   } catch (error) {
     console.error('❌ Failed to fetch existing signals:', error);
     return [];

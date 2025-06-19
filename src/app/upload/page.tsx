@@ -73,16 +73,40 @@ export default function UploadPage() {
       // Subscribe to signaling using Edge Functions
       console.log('🔌 Setting up Edge Functions signaling...');
       let signalCount = 0;
+      const processedSignals = new Set<string>();
+      
       const polling = subscribeToRoom(roomId, senderIdRef.current, (data: unknown) => {
         signalCount++;
         const signalType = (data as { type?: string })?.type;
+        const signalHash = JSON.stringify(data);
+        
+        // Skip offer signals (sent by sender) and already processed signals
+        if (signalType === 'offer' || processedSignals.has(signalHash)) {
+          console.log(`⏩ Skipping signal #${signalCount}: ${signalType} (sender should not process own offers)`);
+          return;
+        }
+        
         console.log(`🔄 SENDER received signal #${signalCount}:`, signalType);
         console.log('🔄 Signal details:', JSON.stringify(data).substring(0, 100) + '...');
         clearTimeout(waitingTimeout);
-        if (peerRef.current) {
+        
+        if (peerRef.current && !peerRef.current.destroyed) {
           try {
-            peerRef.current.signal(data as any);
-            console.log('✅ Signal processed successfully');
+            const signalingState = (peerRef.current as any)._pc?.signalingState;
+            console.log(`📡 Current signaling state: ${signalingState}`);
+            
+            // Only process answer signals if we're in 'have-local-offer' state
+            // Only process ice-candidate signals if we're not in 'closed' state
+            if (
+              (signalType === 'answer' && signalingState === 'have-local-offer') ||
+              (signalType === 'ice-candidate' && signalingState !== 'closed')
+            ) {
+              peerRef.current.signal(data as any);
+              processedSignals.add(signalHash);
+              console.log('✅ Signal processed successfully');
+            } else {
+              console.log(`⏩ Skipping signal in inappropriate state: ${signalType} while ${signalingState}`);
+            }
           } catch (err) {
             console.error('❌ Failed to process signal:', err);
           }
