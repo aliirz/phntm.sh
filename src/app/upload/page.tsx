@@ -80,9 +80,9 @@ export default function UploadPage() {
         const signalType = (data as { type?: string })?.type;
         const signalHash = JSON.stringify(data);
         
-        // Skip offer signals (sent by sender) and already processed signals
-        if (signalType === 'offer' || processedSignals.has(signalHash)) {
-          console.log(`⏩ Skipping signal #${signalCount}: ${signalType} (sender should not process own offers)`);
+        // Skip already processed signals to prevent duplicates
+        if (processedSignals.has(signalHash)) {
+          console.log(`⏩ Skipping duplicate signal #${signalCount}: ${signalType}`);
           return;
         }
         
@@ -92,21 +92,9 @@ export default function UploadPage() {
         
         if (peerRef.current && !peerRef.current.destroyed) {
           try {
-            const signalingState = (peerRef.current as any)._pc?.signalingState;
-            console.log(`📡 Current signaling state: ${signalingState}`);
-            
-            // Only process answer signals if we're in 'have-local-offer' state
-            // Only process ice-candidate signals if we're not in 'closed' state
-            if (
-              (signalType === 'answer' && signalingState === 'have-local-offer') ||
-              (signalType === 'ice-candidate' && signalingState !== 'closed')
-            ) {
-              peerRef.current.signal(data as any);
-              processedSignals.add(signalHash);
-              console.log('✅ Signal processed successfully');
-            } else {
-              console.log(`⏩ Skipping signal in inappropriate state: ${signalType} while ${signalingState}`);
-            }
+            peerRef.current.signal(data as any);
+            processedSignals.add(signalHash);
+            console.log('✅ Signal processed successfully');
           } catch (err) {
             console.error('❌ Failed to process signal:', err);
           }

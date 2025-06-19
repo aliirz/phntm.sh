@@ -126,31 +126,18 @@ export default function DownloadPage() {
         const signalType = (data as { type?: string })?.type;
         const signalHash = JSON.stringify(data);
         
-        // Skip answer signals (sent by receiver) and already processed signals
-        if (signalType === 'answer' || processedSignalsRef.current.has(signalHash)) {
-          console.log('⏩ Skipping NEW ' + signalType + ' signal (receiver should not process own answers)');
+        // Skip already processed signals to prevent duplicates
+        if (processedSignalsRef.current.has(signalHash)) {
+          console.log('⏩ Skipping duplicate signal:', signalType);
           return;
         }
         
         console.log('🔄 Receiver received NEW signal:', signalType);
         try {
           if (peerRef.current && !peerRef.current.destroyed) {
-            // Check peer state before processing signal
-            const signalingState = (peerRef.current as any)._pc?.signalingState;
-            console.log(`📡 Current signaling state: ${signalingState}`);
-            
-            // Only process offer signals if we're in 'stable' state
-            // Only process ice-candidate signals if we're not in 'closed' state
-            if (
-              (signalType === 'offer' && signalingState === 'stable') ||
-              (signalType === 'ice-candidate' && signalingState !== 'closed')
-            ) {
-              peerRef.current.signal(data as any);
-              processedSignalsRef.current.add(signalHash);
-              console.log('✅ Signal processed successfully');
-            } else {
-              console.log(`⏩ Skipping signal in inappropriate state: ${signalType} while ${signalingState}`);
-            }
+            peerRef.current.signal(data as any);
+            processedSignalsRef.current.add(signalHash);
+            console.log('✅ Signal processed successfully');
           }
         } catch (err) {
           console.error('❌ Failed to process signal:', err);
@@ -250,30 +237,18 @@ export default function DownloadPage() {
         const signalType = (signal as { type?: string })?.type;
         const signalHash = JSON.stringify(signal);
         
-        // Skip answer signals (sent by receiver) and already processed signals
-        if (signalType === 'answer' || processedSignalsRef.current.has(signalHash)) {
-          console.log('⏩ Skipping ' + signalType + ' signal (receiver should not process own answers)');
+        // Skip already processed signals to prevent duplicates
+        if (processedSignalsRef.current.has(signalHash)) {
+          console.log('⏩ Skipping duplicate existing signal:', signalType);
           continue;
         }
         
         console.log('📨 Processing existing signal:', signalType);
         try {
           if (!peer.destroyed) {
-            const signalingState = (peer as any)._pc?.signalingState;
-            console.log(`📡 Processing existing signal in state: ${signalingState}`);
-            
-            // Only process offer signals if we're in 'stable' state
-            // Only process ice-candidate signals if we're not in 'closed' state
-            if (
-              (signalType === 'offer' && signalingState === 'stable') ||
-              (signalType === 'ice-candidate' && signalingState !== 'closed')
-            ) {
-              peer.signal(signal as any);
-              processedSignalsRef.current.add(signalHash);
-              console.log('✅ Existing signal processed successfully');
-            } else {
-              console.log(`⏩ Skipping existing signal in inappropriate state: ${signalType} while ${signalingState}`);
-            }
+            peer.signal(signal as any);
+            processedSignalsRef.current.add(signalHash);
+            console.log('✅ Existing signal processed successfully');
           }
         } catch (err) {
           console.error('❌ Failed to process existing signal:', err);

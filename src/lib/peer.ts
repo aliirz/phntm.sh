@@ -20,15 +20,7 @@ export function createPeer(options: PeerOptions): Peer.Instance {
     }
   });
 
-  // Wrap signal handler with error protection
-  peer.on('signal', (data) => {
-    try {
-      options.onSignal(data);
-    } catch (error) {
-      console.error('❌ Error in signal handler:', error);
-      options.onError?.(new Error('Signal handling failed: ' + (error as Error).message));
-    }
-  });
+  peer.on('signal', options.onSignal);
   
   // Add detailed ICE connection state logging
   peer.on('connect', () => {
@@ -72,22 +64,9 @@ export function createPeer(options: PeerOptions): Peer.Instance {
     peer.on('close', options.onClose);
   }
   
-  // Enhanced error handling with detailed debugging
-  peer.on('error', (error) => {
-    console.error('🚨 WebRTC Peer Error:', error);
-    console.error('🔍 Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      signalingState: (peer as any)._pc?.signalingState,
-      iceConnectionState: (peer as any)._pc?.iceConnectionState,
-      iceGatheringState: (peer as any)._pc?.iceGatheringState
-    });
-    
-    if (options.onError) {
-      options.onError(error);
-    }
-  });
+  if (options.onError) {
+    peer.on('error', options.onError);
+  }
 
   // Add ICE connection timeout for better error handling
   let iceTimeout: NodeJS.Timeout;
