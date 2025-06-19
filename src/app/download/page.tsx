@@ -15,6 +15,9 @@ interface FileMetadata {
   type: string;
   totalSize: number;
   totalChunks: number;
+  fileName: string;
+  fileType: string;
+  lastModified: number;
 }
 
 export default function DownloadPage() {
@@ -190,12 +193,17 @@ export default function DownloadPage() {
             if (data.type === 'file-start') {
               metadataRef.current = data;
               setFileSize(data.totalSize);
-              setFileName('received-file'); // We could pass filename in metadata
+              setFileName(data.fileName || 'received-file');
               fileBufferRef.current = [];
               receivedChunksRef.current = 0;
-              console.log('File transfer starting:', data);
+              console.log('📥 File transfer starting:', {
+                name: data.fileName,
+                size: data.totalSize,
+                type: data.fileType,
+                chunks: data.totalChunks
+              });
             } else if (data.type === 'file-end') {
-              console.log('File transfer completed, decrypting...');
+              console.log('✅ File transfer completed, decrypting...');
               await processReceivedFile();
             }
           } catch {
@@ -268,17 +276,24 @@ export default function DownloadPage() {
         offset += chunk.length;
       }
 
-      console.log('Decrypting file...');
+      console.log('🔓 Decrypting file...');
       setProgress(95);
 
       // Decrypt file
       const decryptedBlob = await decryptFile(combined.buffer, encryptionKeyRef.current);
       
+      // Create new blob with original MIME type
+      const mimeType = metadataRef.current.fileType || 'application/octet-stream';
+      const arrayBuffer = await decryptedBlob.arrayBuffer();
+      const typedBlob = new Blob([arrayBuffer], { type: mimeType });
+      
       setProgress(100);
       setStatus('completed');
 
-      // Auto-download
-      downloadBlob(decryptedBlob, fileName || 'decrypted-file');
+      // Auto-download with original filename
+      const downloadFileName = metadataRef.current.fileName || fileName || 'decrypted-file';
+      console.log(`💾 Downloading file: ${downloadFileName} (${mimeType})`);
+      downloadBlob(typedBlob, downloadFileName);
 
     } catch (err) {
       console.error('Failed to process file:', err);

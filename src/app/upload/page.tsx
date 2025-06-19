@@ -15,11 +15,13 @@ export default function UploadPage() {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [error, setError] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   
   const peerRef = useRef<Peer.Instance | null>(null);
   const roomIdRef = useRef<string>('');
   const senderIdRef = useRef<string>('');
   const encryptedFileRef = useRef<ArrayBuffer | null>(null);
+  const originalFileRef = useRef<File | null>(null);
   const pollingRef = useRef<SignalPolling | null>(null);
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export default function UploadPage() {
       // Encrypt file
       const encryptedBuffer = await encryptFile(file, encryptionKey);
       encryptedFileRef.current = encryptedBuffer;
+      originalFileRef.current = file;
 
       // Set waiting timeout  
       const waitingTimeout = setTimeout(() => {
@@ -114,10 +117,17 @@ export default function UploadPage() {
           setStatus('connected');
           
           // Send file when connected
-          if (encryptedFileRef.current) {
-            sendFileChunks(peer, encryptedFileRef.current)
+          if (encryptedFileRef.current && originalFileRef.current) {
+            sendFileChunks(
+              peer, 
+              encryptedFileRef.current, 
+              originalFileRef.current,
+              16384, // chunk size
+              (progress) => setUploadProgress(progress)
+            )
               .then(() => {
                 console.log('File transfer completed');
+                setUploadProgress(100);
               })
               .catch((err) => {
                 console.error('File transfer failed:', err);
@@ -167,6 +177,7 @@ export default function UploadPage() {
           shareUrl={shareUrl}
           status={status}
           error={error}
+          uploadProgress={uploadProgress}
         />
 
         {/* Instructions */}

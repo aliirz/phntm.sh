@@ -100,36 +100,80 @@ export function createPeer(options: PeerOptions): Peer.Instance {
   return peer;
 }
 
-export function sendFileChunks(peer: Peer.Instance, fileBuffer: ArrayBuffer, chunkSize = 16384) {
+export function sendFileChunks(
+  peer: Peer.Instance, 
+  fileBuffer: ArrayBuffer, 
+  originalFile: File,
+  chunkSize = 16384,
+  onProgress?: (progress: number) => void
+) {
   return new Promise<void>((resolve, reject) => {
     try {
       const chunks = Math.ceil(fileBuffer.byteLength / chunkSize);
       let sent = 0;
 
-      // Send metadata first
+      // Send metadata first with original file info
       const metadata = {
         type: 'file-start',
         totalSize: fileBuffer.byteLength,
-        totalChunks: chunks
+        totalChunks: chunks,
+        fileName: originalFile.name,
+        fileType: originalFile.type,
+        lastModified: originalFile.lastModified
       };
+      
+      console.log('📤 Sending file metadata:', metadata);
       peer.send(JSON.stringify(metadata));
 
-      // Send chunks
-      for (let i = 0; i < chunks; i++) {
-        const start = i * chunkSize;
+      // Function to send next chunk with flow control
+      const sendNextChunk = () => {
+        if (sent >= chunks) {
+          // Send completion signal
+          console.log('✅ All chunks sent, sending completion signal');
+          peer.send(JSON.stringify({ type: 'file-end' }));
+          resolve();
+          return;
+        }
+
+        // Check if data channel is ready to send more data
+        const channel = (peer as any)._channel;
+        if (channel && channel.bufferedAmount > 65536) { // 64KB buffer limit
+          console.log(`⏳ Buffer full (${channel.bufferedAmount} bytes), waiting...`);
+          setTimeout(sendNextChunk, 50); // Wait 50ms and try again
+          return;
+        }
+
+        const start = sent * chunkSize;
         const end = Math.min(start + chunkSize, fileBuffer.byteLength);
         const chunk = fileBuffer.slice(start, end);
         
-        peer.send(chunk);
-        sent++;
-        
-        if (sent === chunks) {
-          // Send completion signal
-          peer.send(JSON.stringify({ type: 'file-end' }));
-          resolve();
+        try {
+          peer.send(chunk);
+          sent++;
+          
+          // Report progress
+          const progress = (sent / chunks) * 100;
+          onProgress?.(progress);
+          
+          console.log(`📤 Sent chunk ${sent}/${chunks} (${Math.round(progress)}%)`);
+          
+          // Schedule next chunk with small delay for large files
+          if (fileBuffer.byteLength > 1024 * 1024) { // Files > 1MB
+            setTimeout(sendNextChunk, 10); // 10ms delay for flow control
+          } else {
+            setImmediate(sendNextChunk); // No delay for small files
+          }
+        } catch (error) {
+          console.error('❌ Failed to send chunk:', error);
+          reject(error);
         }
-      }
+      };
+
+      // Start sending chunks
+      sendNextChunk();
+      
     } catch (error) {
+      console.error('❌ Failed to start file transfer:', error);
       reject(error);
     }
   });

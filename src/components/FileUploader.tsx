@@ -8,13 +8,15 @@ interface FileUploaderProps {
   shareUrl?: string;
   status: 'idle' | 'uploading' | 'waiting' | 'connected' | 'error';
   error?: string;
+  uploadProgress?: number;
 }
 
 export default function FileUploader({ 
   onFileSelect, 
   shareUrl, 
   status, 
-  error 
+  error,
+  uploadProgress = 0
 }: FileUploaderProps) {
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -116,17 +118,35 @@ export default function FileUploader({
 
       {/* Status */}
       {status !== 'idle' && (
-        <div className="flex items-center justify-center space-x-2">
-          {status === 'error' ? (
-            <AlertCircle className="h-5 w-5 text-red-500" />
-          ) : status === 'connected' ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          ) : (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-center space-x-2">
+            {status === 'error' ? (
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            ) : status === 'connected' ? (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            ) : (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+            )}
+            <span className={`text-sm font-medium ${getStatusColor()}`}>
+              {getStatusText()}
+            </span>
+          </div>
+          
+          {/* Upload Progress Bar */}
+          {status === 'connected' && uploadProgress > 0 && (
+            <div className="w-full">
+              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <span>Uploading...</span>
+                <span>{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
           )}
-          <span className={`text-sm font-medium ${getStatusColor()}`}>
-            {getStatusText()}
-          </span>
         </div>
       )}
 
