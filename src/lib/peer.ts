@@ -161,7 +161,7 @@ export function sendFileChunks(
           if (fileBuffer.byteLength > 1024 * 1024) { // Files > 1MB
             setTimeout(sendNextChunk, 10); // 10ms delay for flow control
           } else {
-            setImmediate(sendNextChunk); // No delay for small files
+            setTimeout(sendNextChunk, 0); // No delay for small files (browser-compatible)
           }
         } catch (error) {
           console.error('❌ Failed to send chunk:', error);
