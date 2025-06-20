@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Upload, Copy, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Copy, CheckCircle, AlertCircle, Crown, UserPlus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { canUploadFile, formatFileSize } from '@/lib/auth';
 
 interface FileUploaderProps {
   onFileSelect: (file: File) => void;
@@ -18,9 +20,11 @@ export default function FileUploader({
   error,
   uploadProgress = 0
 }: FileUploaderProps) {
+  const { user, userLimits } = useAuth();
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
+  const [limitError, setLimitError] = useState<string>('');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -32,26 +36,40 @@ export default function FileUploader({
     setDragOver(false);
   }, []);
 
+  const handleFileSelection = useCallback((file: File) => {
+    setLimitError('');
+    
+    // Check if user can upload this file
+    const uploadCheck = canUploadFile(file.size, userLimits);
+    
+    if (!uploadCheck.canUpload) {
+      setLimitError(uploadCheck.reason || 'File upload not allowed');
+      setSelectedFile(file); // Still show the file info
+      return;
+    }
+    
+    setSelectedFile(file);
+    onFileSelect(file);
+  }, [userLimits, onFileSelect]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const file = files[0];
-      setSelectedFile(file);
-      onFileSelect(file);
+      handleFileSelection(files[0]);
     }
-  }, [onFileSelect]);
+  }, [handleFileSelection]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const file = files[0];
-      setSelectedFile(file);
-      onFileSelect(file);
+      handleFileSelection(files[0]);
     }
-  }, [onFileSelect]);
+  }, [handleFileSelection]);
+
+
 
   const copyToClipboard = useCallback(async () => {
     if (shareUrl) {
@@ -83,12 +101,47 @@ export default function FileUploader({
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* User Limits Info */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-gray-700">
+                {userLimits.isAnonymous ? 'Anonymous User' : user?.is_pro ? 'Pro User' : 'Free User'}
+              </span>
+              {user?.is_pro && (
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <Crown className="w-3 h-3" />
+                  <span>Pro</span>
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Max file size: {formatFileSize(userLimits.maxFileSize)}
+              {!userLimits.isAnonymous && userLimits.maxMonthlyQuota > 0 && (
+                <> • {formatFileSize(userLimits.currentUsage)}/{formatFileSize(userLimits.maxMonthlyQuota)} used this month</>
+              )}
+            </div>
+          </div>
+          
+          {userLimits.isAnonymous && (
+            <div className="text-right">
+              <button className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition-colors flex items-center space-x-1">
+                <UserPlus className="w-3 h-3" />
+                <span>Sign Up for 100MB</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Upload Area */}
       <div
         className={`
           border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200
           ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
-          ${status === 'idle' ? 'hover:bg-gray-50' : ''}
+          ${status === 'idle' && !limitError ? 'hover:bg-gray-50' : ''}
+          ${limitError ? 'border-red-300 bg-red-50' : ''}
         `}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -99,22 +152,62 @@ export default function FileUploader({
           onChange={handleFileInput}
           className="hidden"
           id="file-input"
-          disabled={status !== 'idle'}
+          disabled={status !== 'idle' || !!limitError}
         />
         
-        <label htmlFor="file-input" className="cursor-pointer">
-          <Upload className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-          <p className="text-lg font-medium text-gray-700 mb-2">
+        <label htmlFor="file-input" className={limitError ? 'cursor-not-allowed' : 'cursor-pointer'}>
+          <Upload className={`mx-auto mb-4 h-12 w-12 ${limitError ? 'text-red-400' : 'text-gray-400'}`} />
+          <p className={`text-lg font-medium mb-2 ${limitError ? 'text-red-700' : 'text-gray-700'}`}>
             {selectedFile ? selectedFile.name : 'Choose a file to share'}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className={`text-sm ${limitError ? 'text-red-600' : 'text-gray-500'}`}>
             {selectedFile 
               ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` 
-              : 'Drag and drop your file here or click to upload'
+              : `Drag and drop your file here or click to upload (max ${formatFileSize(userLimits.maxFileSize)})`
             }
           </p>
         </label>
       </div>
+
+      {/* Limit Error */}
+      {limitError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+            <div>
+              <p className="text-red-700 font-medium">Upload Limit Exceeded</p>
+              <p className="text-red-600 text-sm mt-1">{limitError}</p>
+              
+              {userLimits.isAnonymous && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 text-sm font-medium mb-2">💡 Want higher limits?</p>
+                  <ul className="text-blue-700 text-xs space-y-1 mb-3">
+                    <li>• Free account: 100MB files, 10GB monthly quota</li>
+                    <li>• Pro account: 1GB files, 500GB monthly quota</li>
+                  </ul>
+                  <button className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1">
+                    <UserPlus className="w-4 h-4" />
+                    <span>Sign Up Free</span>
+                  </button>
+                </div>
+              )}
+              
+              {!userLimits.isPro && !userLimits.isAnonymous && (
+                <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-purple-800 text-sm font-medium mb-2">🚀 Need even more?</p>
+                  <p className="text-purple-700 text-xs mb-3">
+                    Pro users can upload files up to 1GB with 500GB monthly quota
+                  </p>
+                  <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity flex items-center space-x-1">
+                    <Crown className="w-4 h-4" />
+                    <span>Upgrade to Pro</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status */}
       {status !== 'idle' && (
