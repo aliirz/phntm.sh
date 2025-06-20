@@ -192,8 +192,21 @@ export default function UploadPage() {
           uploadProgress={uploadProgress}
         />
 
+        {/* Important Notice */}
+        <div className="mt-8 bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-orange-800 mb-4">⚠️ Important Notice</h2>
+          <div className="space-y-2 text-sm text-orange-700">
+            <p>
+              <strong>Single-use links:</strong> Each share link can only be used once. If the recipient needs to download again, you'll need to upload the file again to generate a new link.
+            </p>
+            <p>
+              <strong>Stay online:</strong> Keep this tab open until the transfer completes. The connection will be lost if you close or refresh this page.
+            </p>
+          </div>
+        </div>
+
         {/* Instructions */}
-        <div className="mt-12 bg-white rounded-2xl p-6 shadow-sm">
+        <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">How it works</h2>
           <ol className="space-y-3 text-sm text-gray-600">
             <li className="flex items-start space-x-3">

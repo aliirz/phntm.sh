@@ -141,9 +141,12 @@ export default function FileReceiver({
       </div>
 
       {/* Security Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
         <p className="text-sm text-blue-800">
           🔒 <strong>End-to-end encrypted:</strong> Files are encrypted before transfer and decrypted only on your device. The sender cannot see your download progress.
+        </p>
+        <p className="text-sm text-orange-700">
+          ⚠️ <strong>Single-use link:</strong> This download link can only be used once. If you need to download again, ask the sender for a new link.
         </p>
       </div>
     </div>

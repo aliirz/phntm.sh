@@ -191,6 +191,8 @@ idx_webrtc_signals_sender (sender_id)
 
 ### **📋 Known Limitations (By Design)**
 - **One-to-one transfers** - sender must stay online for each download
+- **Single-use share links** - each link can only be used once due to WebRTC state conflicts
+- **No simultaneous downloads** - multiple receivers cannot download the same file at once
 - **No file persistence** - files exist only during active connection
 - **Browser dependency** - both users need modern browsers with WebRTC
 
@@ -203,10 +205,11 @@ idx_webrtc_signals_sender (sender_id)
 - Usage tracking for billing
 
 ### **Advanced Features**
-- Multiple simultaneous downloads from one sender
-- Relay servers for improved connectivity
-- File expiration and password protection
-- Mobile app support
+- **Multiple simultaneous downloads** - support multiple receivers per sender
+- **Reusable share links** - generate new WebRTC sessions for each receiver
+- **Relay servers** - improve connectivity for users behind restrictive firewalls
+- **File expiration and password protection** - enhanced security features
+- **Mobile app support** - native iOS/Android applications
 
 ## 🛠️ Development Environment
 
@@ -249,8 +252,11 @@ We successfully built a secure, scalable, peer-to-peer file sharing platform wit
 - **Global scalability** - Edge Functions handle worldwide traffic
 - **Production reliability** - robust error handling and monitoring
 - **Modern UX** - intuitive interface with real-time feedback
+- **Single-use security** - each link works once, preventing unauthorized reuse
 
-This foundation is ready for user authentication, billing integration, and advanced features in subsequent phases.
+**Key Achievement:** A fully functional 1-to-1 P2P file transfer system that handles the `setImmediate` browser compatibility issue and provides clear user guidance about single-use links.
+
+**Ready for Phase 2:** Multiple simultaneous downloads, reusable links, and enhanced user management.
 
 ---
 
