@@ -1,6 +1,9 @@
 const SUPABASE_URL = 'https://cgektqiymfsjgornecqe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnZWt0cWl5bWZzamdvcm5lY3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MzM2MTIsImV4cCI6MjA2NTMwOTYxMn0.yxjo0zHndMkXXXabx-xZBQx6eqzkyrthDSZOzWbHh_M';
 
+// WebSocket signaling server for relay connections
+const RELAY_SIGNALING_URL = process.env.NEXT_PUBLIC_RELAY_SIGNALING_URL || 'ws://localhost:8080';
+
 export interface SignalMessage {
   room_id: string;
   signal_type: 'offer' | 'answer' | 'ice-candidate';
@@ -11,6 +14,183 @@ export interface SignalMessage {
 
 export interface SignalPolling {
   stop: () => void;
+}
+
+export interface RelayConnection {
+  ws: WebSocket;
+  clientId: string;
+  disconnect: () => void;
+}
+
+/**
+ * Connect to relay signaling server for Pro users
+ */
+export function connectToRelaySignaling(): Promise<RelayConnection> {
+  return new Promise((resolve, reject) => {
+    console.log('🔌 Connecting to relay signaling server...');
+    
+    const ws = new WebSocket(RELAY_SIGNALING_URL);
+    const clientId = 'client-' + Math.random().toString(36).substring(2, 10);
+    
+    ws.onopen = () => {
+      console.log('✅ Connected to relay signaling server');
+      
+      // Register with signaling server
+      ws.send(JSON.stringify({
+        type: 'register',
+        from: clientId
+      }));
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === 'registered') {
+          console.log(`📝 Registered with relay signaling as ${clientId}`);
+          resolve({
+            ws,
+            clientId,
+            disconnect: () => {
+              console.log('🔌 Disconnecting from relay signaling');
+              ws.close();
+            }
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error parsing relay message:', error);
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('❌ Relay signaling error:', error);
+      reject(error);
+    };
+    
+    ws.onclose = () => {
+      console.log('🔌 Relay signaling connection closed');
+    };
+    
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+        reject(new Error('Relay signaling connection timeout'));
+      }
+    }, 10000);
+  });
+}
+
+/**
+ * Request file storage in relay (Pro users only)
+ */
+export async function requestRelayStorage(
+  relayConnection: RelayConnection,
+  sessionId: string,
+  onSignal: (signal: unknown) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log(`📥 Requesting relay storage for session ${sessionId}`);
+    
+    // Listen for relay responses
+    const messageHandler = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === 'webrtc-signal' && message.sessionId === sessionId) {
+          console.log('📡 Received relay WebRTC signal');
+          onSignal(message.signal);
+        } else if (message.type === 'relay-unavailable' && message.sessionId === sessionId) {
+          console.log('❌ Relay storage unavailable');
+          relayConnection.ws.removeEventListener('message', messageHandler);
+          reject(new Error('Relay storage unavailable'));
+        }
+      } catch (error) {
+        console.error('❌ Error parsing relay message:', error);
+      }
+    };
+    
+    relayConnection.ws.addEventListener('message', messageHandler);
+    
+    // Send storage request
+    relayConnection.ws.send(JSON.stringify({
+      type: 'relay-store-request',
+      from: relayConnection.clientId,
+      sessionId: sessionId
+    }));
+    
+    // Clean up listener after timeout
+    setTimeout(() => {
+      relayConnection.ws.removeEventListener('message', messageHandler);
+      resolve();
+    }, 30000);
+  });
+}
+
+/**
+ * Request file retrieval from relay
+ */
+export async function requestRelayRetrieval(
+  relayConnection: RelayConnection,
+  sessionId: string,
+  onSignal: (signal: unknown) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log(`📤 Requesting relay retrieval for session ${sessionId}`);
+    
+    // Listen for relay responses
+    const messageHandler = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === 'webrtc-signal' && message.sessionId === sessionId) {
+          console.log('📡 Received relay WebRTC signal');
+          onSignal(message.signal);
+        } else if (message.type === 'relay-unavailable' && message.sessionId === sessionId) {
+          console.log('❌ Relay retrieval unavailable');
+          relayConnection.ws.removeEventListener('message', messageHandler);
+          reject(new Error('File not found on relay'));
+        }
+      } catch (error) {
+        console.error('❌ Error parsing relay message:', error);
+      }
+    };
+    
+    relayConnection.ws.addEventListener('message', messageHandler);
+    
+    // Send retrieval request
+    relayConnection.ws.send(JSON.stringify({
+      type: 'relay-retrieve-request',
+      from: relayConnection.clientId,
+      sessionId: sessionId
+    }));
+    
+    // Clean up listener after timeout
+    setTimeout(() => {
+      relayConnection.ws.removeEventListener('message', messageHandler);
+      resolve();
+    }, 30000);
+  });
+}
+
+/**
+ * Send WebRTC signal to relay
+ */
+export function sendRelaySignal(
+  relayConnection: RelayConnection,
+  sessionId: string,
+  signal: unknown,
+  targetId: string
+): void {
+  console.log(`📡 Sending WebRTC signal to relay ${targetId}`);
+  
+  relayConnection.ws.send(JSON.stringify({
+    type: 'webrtc-signal',
+    from: relayConnection.clientId,
+    to: targetId,
+    signal: signal,
+    sessionId: sessionId
+  }));
 }
 
 /**

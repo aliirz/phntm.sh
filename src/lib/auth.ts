@@ -52,6 +52,8 @@ export const PRO_USER_LIMITS = {
 };
 
 export async function signUp(email: string, password: string) {
+  console.log('🔐 Starting signup for:', email);
+  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -60,23 +62,33 @@ export async function signUp(email: string, password: string) {
     }
   });
   
-  if (error) throw error;
-  
-  // Create user profile after successful signup
-  if (data.user) {
-    await createUserProfile(data.user.id, email);
+  if (error) {
+    console.error('❌ Signup error:', error);
+    throw error;
   }
+  
+  console.log('✅ Signup successful:', data);
+  
+  // Note: User profile will be created in auth callback after email confirmation
+  // or during first session if email confirmation is disabled
   
   return data;
 }
 
 export async function signIn(email: string, password: string) {
+  console.log('🔐 Starting signin for:', email);
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
   
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Signin error:', error);
+    throw error;
+  }
+  
+  console.log('✅ Signin successful:', data);
   return data;
 }
 
@@ -144,13 +156,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function canUploadFile(fileSize: number, userLimits: UserLimits): { canUpload: boolean; reason?: string } {
-  if (fileSize > userLimits.maxFileSize) {
-    return {
-      canUpload: false,
-      reason: `File size (${formatFileSize(fileSize)}) exceeds your limit of ${formatFileSize(userLimits.maxFileSize)}`
-    };
-  }
-  
+  // Check monthly quota first for non-anonymous users
   if (!userLimits.isAnonymous && userLimits.maxMonthlyQuota > 0) {
     const newUsage = userLimits.currentUsage + fileSize;
     if (newUsage > userLimits.maxMonthlyQuota) {
@@ -159,6 +165,14 @@ export function canUploadFile(fileSize: number, userLimits: UserLimits): { canUp
         reason: `This upload would exceed your monthly quota of ${formatFileSize(userLimits.maxMonthlyQuota)}`
       };
     }
+  }
+
+  // Then check file size limits
+  if (fileSize > userLimits.maxFileSize) {
+    return {
+      canUpload: false,
+      reason: `File size (${formatFileSize(fileSize)}) exceeds your limit of ${formatFileSize(userLimits.maxFileSize)}`
+    };
   }
   
   return { canUpload: true };

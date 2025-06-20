@@ -23,10 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userLimits = getUserLimits(user);
 
   const refreshUser = async () => {
+    console.log('🔄 Manual user refresh requested');
     if (session?.user) {
+      console.log('👤 Refreshing profile for:', session.user.email);
       const profile = await getUserProfile(session.user.id);
       setUser(profile);
+      console.log('✅ User profile refreshed:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
     } else {
+      console.log('❌ No session found during refresh');
       setUser(null);
     }
   };
@@ -40,12 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
+      console.log('🔍 Getting initial session...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('📱 Initial session:', session ? 'Found' : 'None');
       setSession(session);
       
       if (session?.user) {
+        console.log('👤 Loading user profile for:', session.user.email);
         const profile = await getUserProfile(session.user.id);
         setUser(profile);
+        console.log('✅ User profile loaded:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
       }
       
       setLoading(false);
@@ -56,13 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('🔄 Auth state changed:', event, session ? `(${session.user?.email})` : '(signed out)');
         setSession(session);
         
         if (session?.user) {
+          console.log('👤 Loading user profile after auth change...');
           const profile = await getUserProfile(session.user.id);
           setUser(profile);
+          console.log('✅ User profile updated:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
         } else {
+          console.log('🚪 User signed out, clearing profile');
           setUser(null);
         }
         
