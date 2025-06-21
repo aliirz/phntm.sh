@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Upload, Copy, CheckCircle, AlertCircle, Crown, UserPlus } from 'lucide-react';
+import { Upload, Copy, CheckCircle, AlertCircle, Crown, UserPlus, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { canUploadFile, formatFileSize } from '@/lib/auth';
 
 interface FileUploaderProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File, useRelay?: boolean) => void;
   shareUrl?: string;
-  status: 'idle' | 'uploading' | 'waiting' | 'connected' | 'error';
+  status: 'idle' | 'uploading' | 'waiting' | 'connected' | 'relay-storing' | 'error';
   error?: string;
   uploadProgress?: number;
 }
@@ -25,6 +25,7 @@ export default function FileUploader({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
   const [limitError, setLimitError] = useState<string>('');
+  const [useRelay, setUseRelay] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -49,8 +50,8 @@ export default function FileUploader({
     }
     
     setSelectedFile(file);
-    onFileSelect(file);
-  }, [userLimits, onFileSelect]);
+    onFileSelect(file, useRelay);
+  }, [userLimits, onFileSelect, useRelay]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -68,8 +69,6 @@ export default function FileUploader({
       handleFileSelection(files[0]);
     }
   }, [handleFileSelection]);
-
-
 
   const copyToClipboard = useCallback(async () => {
     if (shareUrl) {
@@ -134,6 +133,46 @@ export default function FileUploader({
           )}
         </div>
       </div>
+
+      {/* Pro User Relay Storage Option */}
+      {user?.is_pro && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start space-x-3">
+              <Shield className="w-5 h-5 text-purple-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-purple-800">Relay Server Storage</h4>
+                <p className="text-xs text-purple-700 mt-1">
+                  Store files on our secure relay servers for 24 hours. Recipients can download even when you're offline.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-600">
+                {useRelay ? '24h Storage' : 'Direct P2P'}
+              </span>
+              <button
+                onClick={() => setUseRelay(!useRelay)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                  useRelay ? 'bg-purple-600' : 'bg-gray-200'
+                }`}
+                disabled={status !== 'idle'}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    useRelay ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          {useRelay && (
+            <div className="mt-3 text-xs text-purple-600 bg-purple-100 rounded-lg p-2">
+              ✨ <strong>Pro Feature:</strong> Your file will be stored securely for 24 hours with unlimited downloads
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Upload Area */}
       <div

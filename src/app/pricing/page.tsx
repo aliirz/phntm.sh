@@ -166,7 +166,7 @@ export default function PricingPage() {
 
           {/* Pricing Plans */}
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan, index) => (
+                          {plans.map((plan) => (
               <div
                 key={plan.name}
                 className={`bg-white rounded-2xl shadow-lg p-8 relative ${
@@ -228,7 +228,7 @@ export default function PricingPage() {
 
                 <button
                   onClick={plan.onClick}
-                  disabled={upgradeLoading || plan.disabled}
+                  disabled={upgradeLoading || !!plan.disabled}
                   className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${plan.buttonStyle} ${
                     upgradeLoading || plan.disabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}

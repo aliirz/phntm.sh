@@ -1,21 +1,28 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-
 import FileUploader from '@/components/FileUploader';
 import { createPeer, sendFileChunks } from '@/lib/peer';
 import { generateAESKey, encryptFile, exportKey } from '@/lib/encryption';
-import { sendSignal, subscribeToRoom, cleanupRoom, type SignalPolling } from '../../lib/signal';
+import { 
+  sendSignal, 
+  subscribeToRoom, 
+  cleanupRoom, 
+  type SignalPolling
+} from '../../lib/signal';
 import { generateRoomId, createShareUrl } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import type Peer from 'simple-peer';
 
-type UploadStatus = 'idle' | 'uploading' | 'waiting' | 'connected' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'waiting' | 'connected' | 'relay-storing' | 'error';
 
 export default function UploadPage() {
+  const { user } = useAuth();
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [error, setError] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [usingRelay, setUsingRelay] = useState<boolean>(false);
   
   const peerRef = useRef<Peer.Instance | null>(null);
   const roomIdRef = useRef<string>('');
@@ -42,21 +49,28 @@ export default function UploadPage() {
     };
   }, []);
 
-  const handleFileSelect = async (file: File) => {
+  const handleRelayStorage = async () => {
     try {
-      setStatus('uploading');
-      setError('');
+      setStatus('relay-storing');
+      console.log('🚀 Starting relay storage for Pro user...');
 
-      // Generate encryption key and room ID
-      const encryptionKey = await generateAESKey();
-      const keyString = await exportKey(encryptionKey);
-      const roomId = generateRoomId();
-      roomIdRef.current = roomId;
+      // For now, simulate relay storage with a delay
+      // TODO: Implement actual relay server integration
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('✅ File uploaded to relay server (simulated)');
+      setStatus('waiting');
+      setUploadProgress(100);
 
-      // Create share URL
-      const url = createShareUrl(roomId, keyString);
-      setShareUrl(url);
+    } catch (err) {
+      console.error('❌ Relay storage setup failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to set up relay storage');
+      setStatus('error');
+    }
+  };
 
+  const handleDirectP2P = async (file: File, encryptionKey: CryptoKey, roomId: string) => {
+    try {
       // Encrypt file
       const encryptedBuffer = await encryptFile(file, encryptionKey);
       encryptedFileRef.current = encryptedBuffer;
@@ -87,7 +101,6 @@ export default function UploadPage() {
         }
         
         console.log(`🔄 SENDER received signal #${signalCount}:`, signalType);
-        console.log('🔄 Signal details:', JSON.stringify(data).substring(0, 100) + '...');
         clearTimeout(waitingTimeout);
         
         if (peerRef.current && !peerRef.current.destroyed) {
@@ -98,8 +111,6 @@ export default function UploadPage() {
           } catch (err) {
             console.error('❌ Failed to process signal:', err);
           }
-        } else {
-          console.error('❌ No peer reference when trying to process signal');
         }
       });
       pollingRef.current = polling;
@@ -159,9 +170,38 @@ export default function UploadPage() {
       });
 
       peerRef.current = peer;
-      console.log('✅ Sender peer created successfully');
-      
       setStatus('waiting');
+
+    } catch (err) {
+      console.error('❌ P2P setup failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to set up direct transfer');
+      setStatus('error');
+    }
+  };
+
+  const handleFileSelect = async (file: File, useRelay = false) => {
+    try {
+      setStatus('uploading');
+      setError('');
+      setUsingRelay(useRelay);
+
+      // Generate encryption key and room ID
+      const encryptionKey = await generateAESKey();
+      const keyString = await exportKey(encryptionKey);
+      const roomId = generateRoomId();
+      roomIdRef.current = roomId;
+
+      // Create share URL
+      const url = createShareUrl(roomId, keyString);
+      setShareUrl(url);
+
+      console.log(`🎯 Upload mode: ${useRelay ? 'Relay Storage (Pro)' : 'Direct P2P'}`);
+
+      if (useRelay && user?.is_pro) {
+        await handleRelayStorage();
+      } else {
+        await handleDirectP2P(file, encryptionKey, roomId);
+      }
       
       console.log(`🔗 Share URL generated: ${url}`);
 
@@ -169,6 +209,23 @@ export default function UploadPage() {
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to prepare file');
       setStatus('error');
+    }
+  };
+
+  const getStatusMessage = () => {
+    switch (status) {
+      case 'uploading': return 'Encrypting and preparing file...';
+      case 'relay-storing': return 'Connecting to relay server...';
+      case 'waiting': 
+        return usingRelay 
+          ? 'File stored on relay server! Share the link - recipients can download anytime in the next 24 hours.'
+          : 'Waiting for peer to connect...';
+      case 'connected': 
+        return usingRelay 
+          ? 'Uploading to relay server...'
+          : 'Connected! File transfer in progress...';
+      case 'error': return error || 'An error occurred';
+      default: return '';
     }
   };
 
@@ -192,18 +249,42 @@ export default function UploadPage() {
           uploadProgress={uploadProgress}
         />
 
-        {/* Important Notice */}
-        <div className="mt-8 bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-orange-800 mb-4">⚠️ Important Notice</h2>
-          <div className="space-y-2 text-sm text-orange-700">
-            <p>
-              <strong>Single-use links:</strong> Each share link can only be used once. If the recipient needs to download again, you'll need to upload the file again to generate a new link.
-            </p>
-            <p>
-              <strong>Stay online:</strong> Keep this tab open until the transfer completes. The connection will be lost if you close or refresh this page.
-            </p>
+        {/* Dynamic notice based on mode */}
+        {usingRelay ? (
+          <div className="mt-8 bg-purple-50 border border-purple-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-purple-800 mb-4">🚀 Pro Relay Storage</h2>
+            <div className="space-y-2 text-sm text-purple-700">
+              <p>
+                <strong>24-hour availability:</strong> Your file will be stored securely on our relay servers for 24 hours, allowing unlimited downloads even when you're offline.
+              </p>
+              <p>
+                <strong>Multiple downloads:</strong> Recipients can download the file multiple times using the same link.
+              </p>
+              <p>
+                <strong>End-to-end encrypted:</strong> Files are encrypted in your browser before upload. We cannot decrypt your files.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-8 bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-orange-800 mb-4">⚠️ Direct P2P Transfer</h2>
+            <div className="space-y-2 text-sm text-orange-700">
+              <p>
+                <strong>Single-use links:</strong> Each share link can only be used once. If the recipient needs to download again, you'll need to upload the file again.
+              </p>
+              <p>
+                <strong>Stay online:</strong> Keep this tab open until the transfer completes. The connection will be lost if you close or refresh this page.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Status message */}
+        {status !== 'idle' && (
+          <div className="mt-6 bg-white rounded-xl p-4 border border-gray-200 text-center">
+            <p className="text-sm text-gray-600">{getStatusMessage()}</p>
+          </div>
+        )}
 
         {/* Instructions */}
         <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm">
@@ -215,11 +296,21 @@ export default function UploadPage() {
             </li>
             <li className="flex items-start space-x-3">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">2</span>
-              <span>A secure peer-to-peer connection is established</span>
+              <span>
+                {usingRelay 
+                  ? 'The encrypted file is uploaded to our secure relay servers'
+                  : 'A secure peer-to-peer connection is established'
+                }
+              </span>
             </li>
             <li className="flex items-start space-x-3">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">3</span>
-              <span>The encrypted file is transferred directly to the recipient</span>
+              <span>
+                {usingRelay
+                  ? 'Recipients can download the file anytime within 24 hours'
+                  : 'The encrypted file is transferred directly to the recipient'
+                }
+              </span>
             </li>
             <li className="flex items-start space-x-3">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">4</span>

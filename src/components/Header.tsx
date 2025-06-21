@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Shield, Crown, LogOut, LogIn, UserPlus, Menu, X } from 'lucide-react';
+import { Shield, Crown, LogOut, LogIn, UserPlus, Menu, X, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatFileSize } from '@/lib/auth';
 import AuthModal from './AuthModal';
@@ -104,6 +104,12 @@ export default function Header() {
 
               {/* Navigation Links */}
               <nav className="flex items-center space-x-4">
+                {user && (
+                  <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors text-sm flex items-center space-x-1">
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                )}
                 <Link href="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
                   Pricing
                 </Link>
@@ -166,6 +172,16 @@ export default function Header() {
 
                 {/* Navigation Links Mobile */}
                 <div className="space-y-2">
+                  {user && (
+                    <Link 
+                      href="/dashboard" 
+                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors py-2"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  )}
                   <Link 
                     href="/pricing" 
                     className="block text-gray-600 hover:text-gray-900 transition-colors py-2"
