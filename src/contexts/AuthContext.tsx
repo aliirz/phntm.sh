@@ -59,10 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           console.log('👤 Loading user profile for:', session.user.email);
           const profile = await getUserProfile(session.user.id);
-          console.log('🔍 Initial profile returned:', profile);
           setUser(profile);
-          console.log('✅ User profile loaded in initial state:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
-          console.log('🏠 Initial user state after setUser:', profile);
+          console.log('✅ User profile loaded:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
         }
       } catch (error) {
         console.error('❌ Failed to get initial session:', error);
@@ -90,10 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('👤 Loading user profile after auth change...');
           try {
             const profile = await getUserProfile(session.user.id);
-            console.log('🔍 Profile returned from getUserProfile:', profile);
             setUser(profile);
-            console.log('✅ User profile updated in state:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
-            console.log('🏠 Current user state after setUser:', profile);
+            console.log('✅ User profile updated:', profile ? (profile.is_pro ? 'pro' : 'free') : 'anonymous');
           } catch (error) {
             console.error('❌ Error loading user profile after auth change:', error);
             setUser(null);

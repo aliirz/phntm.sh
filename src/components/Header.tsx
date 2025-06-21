@@ -9,9 +9,6 @@ import AuthModal from './AuthModal';
 
 export default function Header() {
   const { user, userLimits, loading, signOut } = useAuth();
-  
-  // Debug log to see what user object looks like
-  console.log('🎯 Header component - user:', user, 'loading:', loading);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [showMobileMenu, setShowMobileMenu] = useState(false);

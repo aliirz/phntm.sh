@@ -160,11 +160,10 @@ export async function getUserProfile(userId: string): Promise<User | null> {
     }
 
     const data = await response.json();
-    console.log('📥 API Response data:', JSON.stringify(data, null, 2));
     
     if (data.user) {
       console.log('✅ User profile fetched successfully via API');
-      const userProfile = {
+      return {
         id: data.user.id,
         email: data.user.email,
         is_pro: data.user.is_pro,
@@ -172,11 +171,8 @@ export async function getUserProfile(userId: string): Promise<User | null> {
         max_monthly_quota: data.user.max_monthly_quota,
         monthly_shared: data.user.monthly_shared
       };
-      console.log('👤 Returning user profile:', userProfile);
-      return userProfile;
     }
     
-    console.log('❌ No user data in API response');
     return null;
     
   } catch (err: any) {
