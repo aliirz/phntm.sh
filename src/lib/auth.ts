@@ -78,18 +78,23 @@ export async function signUp(email: string, password: string) {
 export async function signIn(email: string, password: string) {
   console.log('🔐 Starting signin for:', email);
   
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  
-  if (error) {
-    console.error('❌ Signin error:', error);
-    throw error;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      console.error('❌ Signin error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Signin successful:', data);
+    return data;
+  } catch (err: any) {
+    console.error('❌ Signin failed:', err);
+    throw new Error(err.message || 'Authentication failed - please try again');
   }
-  
-  console.log('✅ Signin successful:', data);
-  return data;
 }
 
 export async function signOut() {
@@ -98,6 +103,8 @@ export async function signOut() {
 }
 
 export async function createUserProfile(userId: string, email: string) {
+  console.log('🆕 Creating user profile for:', email);
+  
   const { error } = await supabase
     .from('users')
     .insert({
@@ -106,25 +113,95 @@ export async function createUserProfile(userId: string, email: string) {
       is_pro: false,
       max_file_size: FREE_USER_LIMITS.maxFileSize,
       max_monthly_quota: FREE_USER_LIMITS.maxMonthlyQuota,
-      monthly_shared: 0
+      monthly_shared: 0,
+      quota_reset_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
     });
     
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Error creating user profile:', error);
+    throw error;
+  }
+  
+  console.log('✅ User profile created successfully');
 }
 
 export async function getUserProfile(userId: string): Promise<User | null> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  console.log('👤 Fetching user profile via API for:', userId);
+  
+  try {
+    // Use our server-side API instead of client-side database query
+    const response = await fetch(`/api/user/profile?user_id=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('🆕 User profile not found, will be created automatically');
+        
+        // Return a basic profile - the API will create it on next request
+        const { data: authUser } = await supabase.auth.getUser();
+        if (authUser.user?.email) {
+          console.log('🔄 Returning temporary profile while API creates real one');
+          return {
+            id: userId,
+            email: authUser.user.email,
+            is_pro: false,
+            max_file_size: FREE_USER_LIMITS.maxFileSize,
+            max_monthly_quota: FREE_USER_LIMITS.maxMonthlyQuota,
+            monthly_shared: 0
+          };
+        }
+      }
+      
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('📥 API Response data:', JSON.stringify(data, null, 2));
     
-  if (error) {
-    console.error('Error fetching user profile:', error);
+    if (data.user) {
+      console.log('✅ User profile fetched successfully via API');
+      const userProfile = {
+        id: data.user.id,
+        email: data.user.email,
+        is_pro: data.user.is_pro,
+        max_file_size: data.user.max_file_size,
+        max_monthly_quota: data.user.max_monthly_quota,
+        monthly_shared: data.user.monthly_shared
+      };
+      console.log('👤 Returning user profile:', userProfile);
+      return userProfile;
+    }
+    
+    console.log('❌ No user data in API response');
+    return null;
+    
+  } catch (err: any) {
+    console.error('❌ API request failed:', err);
+    
+    // Fallback - return a basic profile based on auth user
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (authUser.user?.email) {
+        console.log('🔄 Returning fallback profile due to API failure');
+        return {
+          id: userId,
+          email: authUser.user.email,
+          is_pro: false,
+          max_file_size: FREE_USER_LIMITS.maxFileSize,
+          max_monthly_quota: FREE_USER_LIMITS.maxMonthlyQuota,
+          monthly_shared: 0
+        };
+      }
+    } catch (fallbackError) {
+      console.error('❌ Even fallback failed:', fallbackError);
+    }
+    
     return null;
   }
-  
-  return data;
 }
 
 export function getUserLimits(user: User | null): UserLimits {

@@ -9,6 +9,9 @@ import AuthModal from './AuthModal';
 
 export default function Header() {
   const { user, userLimits, loading, signOut } = useAuth();
+  
+  // Debug log to see what user object looks like
+  console.log('🎯 Header component - user:', user, 'loading:', loading);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -38,7 +41,12 @@ export default function Header() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
               {/* User Status */}
-              {!loading && (
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-gray-600">Loading...</span>
+                </div>
+              ) : (
                 <div className="flex items-center space-x-4">
                   {user ? (
                     <>
@@ -139,7 +147,14 @@ export default function Header() {
             <div className="md:hidden border-t border-gray-200 py-4">
               <div className="space-y-4">
                 {/* User Status Mobile */}
-                {!loading && (
+                {loading ? (
+                  <div className="px-4 py-2 bg-gray-50 rounded-lg text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm text-gray-600">Loading...</span>
+                    </div>
+                  </div>
+                ) : (
                   <div className="px-4 py-2 bg-gray-50 rounded-lg">
                     {user ? (
                       <div>

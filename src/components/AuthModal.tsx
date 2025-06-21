@@ -35,23 +35,30 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
       if (mode === 'signup') {
         if (password !== confirmPassword) {
           setError('Passwords do not match');
+          setLoading(false);
           return;
         }
         if (password.length < 6) {
           setError('Password must be at least 6 characters');
+          setLoading(false);
           return;
         }
         
+        console.log('🔄 Starting signup process...');
         await signUp(email, password);
         setSuccess('Account created! Please check your email to verify your account.');
         setMode('signin');
       } else {
+        console.log('🔄 Starting signin process...');
         await signIn(email, password);
+        console.log('🔄 Refreshing user profile...');
         await refreshUser();
+        console.log('✅ Authentication complete, closing modal');
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      console.error('❌ Auth error in modal:', err);
+      setError(err.message || 'Authentication failed - please try again');
     } finally {
       setLoading(false);
     }

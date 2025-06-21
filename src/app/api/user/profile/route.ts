@@ -33,6 +33,66 @@ export async function GET(request: NextRequest) {
 
     if (userError) {
       console.error('User lookup error:', userError);
+      
+      // If user doesn't exist, try to create it automatically
+      if (userError.code === 'PGRST116') {
+        console.log('User not found, attempting to create profile...');
+        
+        try {
+          // Get user email from Supabase Auth
+          const { data: authData } = await supabase.auth.admin.getUserById(userId);
+          
+          if (authData.user?.email) {
+            console.log('Creating new user profile for:', authData.user.email);
+            
+            // Create new user profile
+            const { data: newUser, error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: userId,
+                email: authData.user.email,
+                is_pro: false,
+                max_file_size: 100 * 1024 * 1024, // 100MB
+                max_monthly_quota: 10 * 1024 * 1024 * 1024, // 10GB
+                monthly_shared: 0,
+                quota_reset_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+              })
+              .select()
+              .single();
+              
+            if (createError) {
+              console.error('Error creating user profile:', createError);
+              return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 });
+            }
+            
+            console.log('Successfully created user profile');
+            
+            // Return the newly created user profile (no stats for new users)
+            return NextResponse.json({
+              user: {
+                id: newUser.id,
+                email: newUser.email,
+                is_pro: newUser.is_pro,
+                monthly_shared: newUser.monthly_shared,
+                max_file_size: newUser.max_file_size,
+                max_monthly_quota: newUser.max_monthly_quota,
+                quota_reset_date: newUser.quota_reset_date,
+                created_at: newUser.created_at,
+              },
+              subscription: null,
+              stats: {
+                total_transfers: 0,
+                successful_transfers: 0,
+                total_bytes_transferred: 0,
+                success_rate: 0,
+              },
+            });
+          }
+        } catch (createErr) {
+          console.error('Error in auto-create flow:', createErr);
+        }
+      }
+      
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
