@@ -61,7 +61,7 @@ describe('FileUploader', () => {
       
       await userEvent.upload(fileInput, testFile)
       
-      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile)
+      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile, false)
       expect(screen.queryByText('Upload Limit Exceeded')).not.toBeInTheDocument()
     })
 
@@ -131,7 +131,7 @@ describe('FileUploader', () => {
       
       await userEvent.upload(fileInput, testFile)
       
-      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile)
+      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile, false)
     })
 
     it('should reject files over 100MB with Pro upgrade prompt', async () => {
@@ -189,7 +189,7 @@ describe('FileUploader', () => {
       
       await userEvent.upload(fileInput, testFile)
       
-      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile)
+      expect(mockOnFileSelect).toHaveBeenCalledWith(testFile, false)
     })
 
     it('should not show upgrade prompts for pro users', () => {
@@ -235,7 +235,7 @@ describe('FileUploader', () => {
       })
       
       await waitFor(() => {
-        expect(mockOnFileSelect).toHaveBeenCalledWith(testFile)
+        expect(mockOnFileSelect).toHaveBeenCalledWith(testFile, false)
       })
     })
   })

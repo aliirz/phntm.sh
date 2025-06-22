@@ -51,4 +51,44 @@ beforeAll(() => {
 
 afterAll(() => {
   console.warn = originalWarn
-}) 
+})
+
+// Mock TextEncoder/TextDecoder for Node.js environment
+;(global as any).TextEncoder = class MockTextEncoder {
+  encode(input: string): Uint8Array {
+    return new Uint8Array(Buffer.from(input, 'utf8'))
+  }
+}
+
+;(global as any).TextDecoder = class MockTextDecoder {
+  decode(input: BufferSource): string {
+    return Buffer.from(input as ArrayBuffer).toString('utf8')
+  }
+}
+
+// Mock File.arrayBuffer() method
+Object.defineProperty(File.prototype, 'arrayBuffer', {
+  value: async function() {
+    const buffer = new ArrayBuffer(this.size)
+    const view = new Uint8Array(buffer)
+    // Fill with some test data
+    for (let i = 0; i < this.size; i++) {
+      view[i] = i % 256
+    }
+    return buffer
+  },
+  writable: true,
+})
+
+// Mock window.location for tests (only if not already defined)
+if (!window.location) {
+  Object.defineProperty(window, 'location', {
+    value: {
+      origin: 'http://localhost:3000',
+      href: 'http://localhost:3000',
+      hash: '',
+    },
+    configurable: true,
+    writable: true,
+  })
+} 

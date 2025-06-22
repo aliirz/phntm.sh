@@ -15,7 +15,7 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function parseShareUrl(url: string): { roomId: string; key: string } | null {
+export function parseShareUrl(url: string): { roomId: string; key: string; mode?: 'relay' | 'p2p' } | null {
   try {
     const urlObj = new URL(url);
     const fragment = urlObj.hash.substring(1);
@@ -23,11 +23,12 @@ export function parseShareUrl(url: string): { roomId: string; key: string } | nu
     
     const roomId = params.get('room');
     let key = params.get('key');
+    const mode = params.get('mode') as 'relay' | 'p2p' | null;
     
     if (roomId && key) {
       // Decode any URL encoding that might have happened
       key = decodeURIComponent(key);
-      return { roomId, key };
+      return { roomId, key, mode: mode || 'p2p' }; // default to p2p for backward compatibility
     }
     
     return null;
@@ -37,12 +38,12 @@ export function parseShareUrl(url: string): { roomId: string; key: string } | nu
   }
 }
 
-export function createShareUrl(roomId: string, key: string): string {
+export function createShareUrl(roomId: string, key: string, mode: 'relay' | 'p2p' = 'p2p'): string {
   const baseUrl = typeof window !== 'undefined' 
     ? window.location.origin 
     : 'http://localhost:3000';
   
-  return `${baseUrl}/download#room=${roomId}&key=${key}`;
+  return `${baseUrl}/download#room=${roomId}&key=${key}&mode=${mode}`;
 }
 
 export function formatBytes(bytes: number): string {

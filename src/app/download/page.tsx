@@ -5,7 +5,16 @@ import { useState, useEffect, useRef } from 'react';
 import FileReceiver from '@/components/FileReceiver';
 import { createPeer } from '@/lib/peer';
 import { importKey, decryptFile } from '@/lib/encryption';
-import { sendSignal, subscribeToRoom, testConnection, getExistingSignals, type SignalPolling } from '../../lib/signal';
+import { 
+  sendSignal, 
+  subscribeToRoom, 
+  testConnection, 
+  getExistingSignals, 
+  connectToRelaySignaling,
+  requestRelayRetrieval,
+  type SignalPolling,
+  type RelayConnection 
+} from '../../lib/signal';
 import { parseShareUrl, downloadBlob } from '@/lib/utils';
 import type Peer from 'simple-peer';
 
@@ -31,7 +40,9 @@ export default function DownloadPage() {
   const roomIdRef = useRef<string>('');
   const receiverIdRef = useRef<string>('');
   const encryptionKeyRef = useRef<CryptoKey | null>(null);
+  const transferModeRef = useRef<'relay' | 'p2p'>('p2p');
   const pollingRef = useRef<SignalPolling | null>(null);
+  const relayConnectionRef = useRef<RelayConnection | null>(null);
   const fileBufferRef = useRef<Uint8Array[]>([]);
   const metadataRef = useRef<FileMetadata | null>(null);
   const receivedChunksRef = useRef<number>(0);
@@ -58,8 +69,9 @@ export default function DownloadPage() {
       
       if (parsed) {
         roomIdRef.current = parsed.roomId;
+        transferModeRef.current = parsed.mode || 'p2p';
         initializeKey(parsed.key);
-        console.log(`🎯 Parsed share URL - Room: ${parsed.roomId}`);
+        console.log(`🎯 Parsed share URL - Room: ${parsed.roomId}, Mode: ${transferModeRef.current}`);
       } else {
         setError('Invalid share link');
         setStatus('error');
@@ -77,6 +89,9 @@ export default function DownloadPage() {
       if (pollingRef.current) {
         pollingRef.current.stop();
       }
+      if (relayConnectionRef.current) {
+        relayConnectionRef.current.disconnect();
+      }
     };
   }, []);
 
@@ -89,6 +104,137 @@ export default function DownloadPage() {
       setError('Invalid encryption key');
       setStatus('error');
     }
+  };
+
+  const tryRelayRetrieval = async (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      console.log('🏭 Attempting relay retrieval first...');
+      
+      let relayAttemptComplete = false;
+      
+      const cleanupAndResolve = (success: boolean) => {
+        if (relayAttemptComplete) return;
+        relayAttemptComplete = true;
+        
+        if (!success) {
+          // Clean up relay connection attempt
+          if (relayConnectionRef.current) {
+            relayConnectionRef.current.disconnect();
+            relayConnectionRef.current = null;
+          }
+          if (peerRef.current) {
+            peerRef.current.destroy();
+            peerRef.current = null;
+          }
+        }
+        resolve(success);
+      };
+
+      connectToRelaySignaling()
+        .then((relayConnection) => {
+          relayConnectionRef.current = relayConnection;
+          console.log('✅ Connected to relay signaling');
+
+          // Listen for relay-unavailable message
+          const messageHandler = (event: MessageEvent) => {
+            try {
+              const message = JSON.parse(event.data);
+              if (message.type === 'relay-unavailable' && message.sessionId === roomIdRef.current) {
+                console.log('❌ Relay reports file not found, falling back to P2P');
+                cleanupAndResolve(false);
+                return;
+              }
+            } catch (error) {
+              // Ignore parse errors
+            }
+          };
+
+          relayConnection.ws.addEventListener('message', messageHandler);
+
+          // Create peer to receive from relay
+          const peer = createPeer({
+            initiator: false,
+            onSignal: (signal) => {
+              console.log('📡 Sending signal to relay for retrieval');
+              relayConnection.ws.send(JSON.stringify({
+                type: 'webrtc-signal',
+                from: relayConnection.clientId,
+                to: 'relay',
+                signal: signal,
+                sessionId: roomIdRef.current
+              }));
+            },
+            onConnect: () => {
+              console.log('🔗 Connected to relay server for download!');
+              setStatus('receiving');
+              cleanupAndResolve(true); // Relay is working
+            },
+            onData: async (chunk) => {
+              try {
+                // Same file receiving logic as direct P2P
+                const text = new TextDecoder().decode(chunk);
+                const data = JSON.parse(text);
+                
+                if (data.type === 'file-start') {
+                  metadataRef.current = data;
+                  setFileSize(data.totalSize);
+                  setFileName(data.fileName || 'received-file');
+                  fileBufferRef.current = [];
+                  receivedChunksRef.current = 0;
+                  console.log('📥 Relay file transfer starting:', data.fileName);
+                } else if (data.type === 'file-end') {
+                  console.log('✅ Relay file transfer completed');
+                  await processReceivedFile();
+                }
+              } catch {
+                // File chunk
+                fileBufferRef.current.push(new Uint8Array(chunk));
+                receivedChunksRef.current++;
+                
+                if (metadataRef.current) {
+                  const progress = (receivedChunksRef.current / metadataRef.current.totalChunks) * 100;
+                  setProgress(Math.min(progress, 95));
+                }
+              }
+            },
+            onError: (err) => {
+              console.error('❌ Relay peer error:', err);
+              cleanupAndResolve(false);
+            },
+            onClose: () => {
+              console.log('🔌 Relay connection closed');
+            }
+          });
+
+          peerRef.current = peer;
+
+          // Request file from relay
+          requestRelayRetrieval(relayConnection, roomIdRef.current, (signal) => {
+            console.log('📡 Received signal from relay');
+            if (peer && !peer.destroyed) {
+              peer.signal(signal as any);
+            }
+          }).then(() => {
+            console.log('🏗️ Relay retrieval request sent');
+            
+            // Wait 5 seconds for relay to respond
+            setTimeout(() => {
+              if (!relayAttemptComplete) {
+                console.log('⏰ Relay timeout, falling back to P2P');
+                cleanupAndResolve(false);
+              }
+            }, 5000);
+          }).catch((err) => {
+            console.log('❌ Relay request failed:', err);
+            cleanupAndResolve(false);
+          });
+
+        })
+        .catch((err) => {
+          console.log('❌ Failed to connect to relay signaling:', err);
+          cleanupAndResolve(false);
+        });
+    });
   };
 
   const handleDownloadStart = async () => {
@@ -104,11 +250,29 @@ export default function DownloadPage() {
     console.log(`🔑 Encryption key exists: ${!!encryptionKeyRef.current}`);
 
     try {
-      console.log(`🎯 Joining room: ${roomIdRef.current}`);
-      console.log('🔄 Starting WebRTC connection as joiner');
-      
       setStatus('connecting');
       setError('');
+
+      // Use transfer mode to determine download strategy
+      if (transferModeRef.current === 'relay') {
+        // For relay files, try relay first with P2P fallback
+        console.log('🏭 Relay file detected - trying relay retrieval first...');
+        const relaySuccess = await tryRelayRetrieval();
+        
+        if (relaySuccess) {
+          console.log('✅ Using relay server for download');
+          return; // Relay is handling the download
+        }
+
+        // Fallback to direct P2P if relay fails
+        console.log('📡 Relay unavailable, falling back to direct P2P...');
+      } else {
+        // For P2P files, go directly to P2P without checking relay
+        console.log('📡 P2P file detected - connecting directly via P2P...');
+      }
+
+      console.log(`🎯 Joining room: ${roomIdRef.current}`);
+      console.log('🔄 Starting WebRTC connection as joiner');
 
       // Test Edge Functions connection first
       console.log('🧪 Testing Edge Functions connection for receiver...');
@@ -320,6 +484,11 @@ export default function DownloadPage() {
     if (pollingRef.current) {
       pollingRef.current.stop();
       pollingRef.current = null;
+    }
+    
+    if (relayConnectionRef.current) {
+      relayConnectionRef.current.disconnect();
+      relayConnectionRef.current = null;
     }
     
     // Clear buffers

@@ -8,7 +8,11 @@ import {
   sendSignal, 
   subscribeToRoom, 
   cleanupRoom, 
-  type SignalPolling
+  connectToRelaySignaling,
+  requestRelayStorage,
+  sendRelaySignal,
+  type SignalPolling,
+  type RelayConnection
 } from '../../lib/signal';
 import { generateRoomId, createShareUrl } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +34,7 @@ export default function UploadPage() {
   const encryptedFileRef = useRef<ArrayBuffer | null>(null);
   const originalFileRef = useRef<File | null>(null);
   const pollingRef = useRef<SignalPolling | null>(null);
+  const relayConnectionRef = useRef<RelayConnection | null>(null);
 
   useEffect(() => {
     // Generate unique sender ID for this session
@@ -43,24 +48,94 @@ export default function UploadPage() {
       if (pollingRef.current) {
         pollingRef.current.stop();
       }
+      if (relayConnectionRef.current) {
+        relayConnectionRef.current.disconnect();
+      }
       if (roomIdRef.current) {
         cleanupRoom(roomIdRef.current);
       }
     };
   }, []);
 
-  const handleRelayStorage = async () => {
+  const handleRelayStorage = async (file: File, encryptionKey: CryptoKey, roomId: string) => {
     try {
       setStatus('relay-storing');
       console.log('🚀 Starting relay storage for Pro user...');
 
-      // For now, simulate relay storage with a delay
-      // TODO: Implement actual relay server integration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('✅ File uploaded to relay server (simulated)');
-      setStatus('waiting');
-      setUploadProgress(100);
+      // Connect to relay signaling server
+      const relayConnection = await connectToRelaySignaling();
+      relayConnectionRef.current = relayConnection;
+      console.log('✅ Connected to relay signaling server');
+
+      // Encrypt file first
+      const encryptedBuffer = await encryptFile(file, encryptionKey);
+      encryptedFileRef.current = encryptedBuffer;
+      originalFileRef.current = file;
+      console.log('🔐 File encrypted for relay storage');
+
+      // Create peer to send file to relay
+      const peer = createPeer({
+        initiator: true,
+        onSignal: (signal) => {
+          console.log('📡 Sending signal to relay server');
+          // Send signal to any available relay (signaling server will route it)
+          relayConnection.ws.send(JSON.stringify({
+            type: 'webrtc-signal',
+            from: relayConnection.clientId,
+            to: 'relay', // This will be updated by signaling server
+            signal: signal,
+            sessionId: roomId
+          }));
+        },
+        onConnect: () => {
+          console.log('🔗 Connected to relay server! Uploading file...');
+          setStatus('connected');
+          
+          // Send encrypted file to relay
+          if (encryptedFileRef.current && originalFileRef.current) {
+            sendFileChunks(
+              peer,
+              encryptedFileRef.current,
+              originalFileRef.current,
+              16384, // chunk size
+              (progress) => {
+                console.log(`📤 Upload progress: ${progress}%`);
+                setUploadProgress(progress);
+              }
+            )
+              .then(() => {
+                console.log('✅ File successfully uploaded to relay server');
+                setUploadProgress(100);
+                setStatus('waiting');
+              })
+              .catch((err) => {
+                console.error('❌ File upload to relay failed:', err);
+                setError('Failed to upload file to relay server');
+                setStatus('error');
+              });
+          }
+        },
+        onError: (err) => {
+          console.error('❌ Relay peer error:', err);
+          setError(`Relay connection error: ${err.message}`);
+          setStatus('error');
+        },
+        onClose: () => {
+          console.log('🔌 Relay connection closed');
+        }
+      });
+
+      peerRef.current = peer;
+
+      // Request relay storage
+      await requestRelayStorage(relayConnection, roomId, (signal) => {
+        console.log('📡 Received signal from relay server');
+        if (peer && !peer.destroyed) {
+          peer.signal(signal as any);
+        }
+      });
+
+      console.log('🏗️ Relay storage request sent');
 
     } catch (err) {
       console.error('❌ Relay storage setup failed:', err);
@@ -191,14 +266,15 @@ export default function UploadPage() {
       const roomId = generateRoomId();
       roomIdRef.current = roomId;
 
-      // Create share URL
-      const url = createShareUrl(roomId, keyString);
+      // Create share URL with transfer mode
+      const transferMode = (useRelay && user?.is_pro) ? 'relay' : 'p2p';
+      const url = createShareUrl(roomId, keyString, transferMode);
       setShareUrl(url);
 
       console.log(`🎯 Upload mode: ${useRelay ? 'Relay Storage (Pro)' : 'Direct P2P'}`);
 
       if (useRelay && user?.is_pro) {
-        await handleRelayStorage();
+        await handleRelayStorage(file, encryptionKey, roomId);
       } else {
         await handleDirectP2P(file, encryptionKey, roomId);
       }
