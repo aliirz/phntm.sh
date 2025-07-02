@@ -51,7 +51,7 @@ beforeAll(() => {
 
 afterAll(() => {
   console.warn = originalWarn
-})
+}) 
 
 // Mock TextEncoder/TextDecoder for Node.js environment
 ;(global as any).TextEncoder = class MockTextEncoder {
