@@ -78,86 +78,77 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full">
+        {/* Clean Header */}
+        <div className="flex items-center justify-between p-6 pb-0">
+          <h2 className="text-2xl font-bold text-[#2d2e30]">
+            {mode === 'signin' ? 'Welcome back' : 'Create account'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-[#6b7280] hover:text-[#2d2e30] transition-colors p-2"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {/* Benefits for signup */}
-          {mode === 'signup' && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-medium text-blue-900 mb-2">Free Account Benefits:</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• 100MB file size limit (vs 25MB anonymous)</li>
-                <li>• 10GB monthly quota</li>
-                <li>• Upload history and usage tracking</li>
-                <li>• Priority support</li>
-              </ul>
-            </div>
-          )}
+          {/* Clean subtitle */}
+          <p className="text-[#6b7280] mb-6">
+            {mode === 'signin' 
+              ? 'Sign in to access your account' 
+              : 'Get 100MB file limit and usage tracking'
+            }
+          </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+            <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-lg text-green-600 text-sm">
               {success}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email - Clean design without icons */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#2d2e30] mb-2">
                 Email
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#007574] text-[#2d2e30] placeholder-[#9ca3af]"
+                placeholder="you@example.com"
+                required
+              />
             </div>
 
-            {/* Password */}
+            {/* Password - Clean design */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#2d2e30] mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your password"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#007574] text-[#2d2e30] placeholder-[#9ca3af] pr-12"
+                  placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6b7280] hover:text-[#2d2e30] p-1"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -167,28 +158,25 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
             {/* Confirm Password (signup only) */}
             {mode === 'signup' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[#2d2e30] mb-2">
                   Confirm Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Confirm your password"
-                    required
-                  />
-                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#007574] text-[#2d2e30] placeholder-[#9ca3af]"
+                  placeholder="••••••••"
+                  required
+                />
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Button - Clean teal design */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full bg-[#007574] text-white py-3 rounded-lg hover:bg-[#007574]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -196,22 +184,22 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
                   <span>{mode === 'signin' ? 'Signing in...' : 'Creating account...'}</span>
                 </div>
               ) : (
-                mode === 'signin' ? 'Sign In' : 'Create Account'
+                mode === 'signin' ? 'Sign in' : 'Create account'
               )}
             </button>
           </form>
 
-          {/* Switch Mode */}
+          {/* Switch Mode - Clean text link */}
           <div className="mt-6 text-center">
-            <button
-              onClick={switchMode}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              {mode === 'signin' 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
-            </button>
+            <p className="text-sm text-[#6b7280]">
+              {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
+              <button
+                onClick={switchMode}
+                className="text-[#007574] hover:text-[#007574]/80 font-medium"
+              >
+                {mode === 'signin' ? "Sign up" : "Sign in"}
+              </button>
+            </p>
           </div>
         </div>
       </div>

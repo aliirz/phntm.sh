@@ -1,26 +1,119 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* kewl.app brand colors */
+  --kewl-dark: #2d2e30;
+  --kewl-teal: #007574;
+  --kewl-light: #f8fafb;
+  --kewl-gray: #4b5563;
+  --kewl-accent: #10b981;
+  
+  /* Semantic colors - always light mode */
+  --background: var(--kewl-light);
+  --foreground: var(--kewl-dark);
+  --primary: var(--kewl-teal);
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --muted: #f8fafc;
+  --border: #e2e8f0;
+  --text-primary: var(--kewl-dark);
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-kewl-dark: var(--kewl-dark);
+  --color-kewl-teal: var(--kewl-teal);
+  --color-kewl-light: var(--kewl-light);
+  --color-kewl-gray: var(--kewl-gray);
+  --color-kewl-accent: var(--kewl-accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Input and form elements styling */
+input, textarea, select {
+  color: var(--text-primary) !important;
+  background-color: white !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--kewl-teal);
+}
+
+/* Smooth transitions */
+* {
+  transition: colors 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Focus rings */
+:focus-visible {
+  outline: 2px solid var(--kewl-teal);
+  outline-offset: 2px;
+}
+
+/* Glass effect utility */
+.glass {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, var(--kewl-teal) 0%, var(--kewl-dark) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--kewl-teal) 0%, var(--kewl-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Text utilities */
+.text-primary {
+  color: var(--text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
 }

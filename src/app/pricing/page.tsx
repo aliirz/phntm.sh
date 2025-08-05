@@ -131,94 +131,81 @@ export default function PricingPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen bg-[#FAFBFC] py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Choose Your Plan
+          {/* Clean Header */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-black text-[#2d2e30] mb-4">
+              Simple, transparent pricing
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Start for free, upgrade when you need more power and flexibility
+            <p className="text-xl text-[#6b7280] max-w-2xl mx-auto">
+              Start for free, upgrade when you need more
             </p>
             
-            {/* Current User Status */}
+            {/* Clean User Status Badge */}
             {user && (
-              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto">
-                <div className="flex items-center justify-center space-x-2">
-                  <span className="text-blue-800 font-medium">{user.email}</span>
-                  {user.is_pro && (
-                    <span className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
-                      <Crown className="w-3 h-3" />
-                      <span>Pro</span>
+              <div className="mt-8 inline-flex items-center gap-3 bg-white rounded-full px-6 py-3 shadow-sm border border-gray-100">
+                <span className="text-sm font-medium text-[#2d2e30]">{user.email}</span>
+                {user.is_pro && (
+                  <>
+                    <span className="text-sm text-[#6b7280]">•</span>
+                    <span className="bg-[#007574] text-white px-3 py-0.5 rounded-full text-xs font-semibold">
+                      PRO
                     </span>
-                  )}
-                </div>
-                <div className="text-sm text-blue-600 mt-1">
-                  Current limit: {formatFileSize(userLimits.maxFileSize)}
-                  {!userLimits.isAnonymous && userLimits.maxMonthlyQuota > 0 && (
-                    <> • {formatFileSize(userLimits.currentUsage)}/{formatFileSize(userLimits.maxMonthlyQuota)} used this month</>
-                  )}
-                </div>
+                  </>
+                )}
+                <span className="text-sm text-[#6b7280]">•</span>
+                <span className="text-sm text-[#6b7280]">
+                  {formatFileSize(userLimits.maxFileSize)} limit
+                </span>
               </div>
             )}
           </div>
 
-          {/* Pricing Plans */}
+          {/* Clean Pricing Cards */}
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                          {plans.map((plan) => (
+            {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`bg-white rounded-2xl shadow-lg p-8 relative ${
-                  plan.popular ? 'ring-2 ring-blue-500 scale-105' : ''
-                } ${plan.current ? 'ring-2 ring-green-500' : ''}`}
+                className={`bg-white rounded-xl p-8 ${
+                  plan.popular ? 'ring-2 ring-[#007574] relative' : 'border border-gray-100'
+                }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
-                      <Crown className="w-4 h-4" />
-                      <span>Most Popular</span>
-                    </div>
+                  <div className="absolute -top-3 left-8">
+                    <span className="bg-[#007574] text-white px-3 py-1 rounded-full text-xs font-semibold">
+                      RECOMMENDED
+                    </span>
                   </div>
                 )}
 
-                {plan.current && (
-                  <div className="absolute -top-4 right-4">
-                    <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Current
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-bold text-[#2d2e30] mb-2">
                     {plan.name}
                   </h3>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">
+                    <span className="text-4xl font-black text-[#2d2e30]">
                       {plan.price}
                     </span>
-                    <span className="text-gray-600 ml-1">
+                    <span className="text-[#6b7280] ml-1">
                       {plan.period}
                     </span>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-[#6b7280]">
                     {plan.description}
                   </p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center space-x-3">
-                      {feature.included ? (
-                        <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      ) : (
-                        <X className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      )}
+                    <li key={featureIndex} className="flex items-start gap-3">
+                      <span className={`text-lg ${feature.included ? 'text-[#007574]' : 'text-gray-300'}`}>
+                        {feature.included ? '✓' : '×'}
+                      </span>
                       <span
-                        className={
-                          feature.included ? 'text-gray-700' : 'text-gray-400'
-                        }
+                        className={`text-sm ${
+                          feature.included ? 'text-[#2d2e30]' : 'text-gray-400'
+                        }`}
                       >
                         {feature.text}
                       </span>
@@ -229,95 +216,87 @@ export default function PricingPage() {
                 <button
                   onClick={plan.onClick}
                   disabled={upgradeLoading || !!plan.disabled}
-                  className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${plan.buttonStyle} ${
-                    upgradeLoading || plan.disabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
+                    plan.popular 
+                      ? 'bg-[#007574] text-white hover:bg-[#007574]/90' 
+                      : plan.disabled 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-[#2d2e30] border border-gray-200 hover:bg-gray-50'
+                  } ${upgradeLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {upgradeLoading && plan.onClick ? (
                     <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                       <span>Processing...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>{plan.buttonText}</span>
-                      {plan.onClick && !plan.disabled && <ArrowRight className="w-4 h-4" />}
-                    </div>
+                    <span>{plan.buttonText}</span>
                   )}
                 </button>
               </div>
             ))}
           </div>
 
-          {/* Feature Comparison */}
-          <div className="mt-16 bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-              What's New in Phase 2
+          {/* Pro Features Section */}
+          <div className="mt-24 text-center">
+            <h2 className="text-3xl font-bold text-[#2d2e30] mb-12">
+              Why go Pro?
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Zap className="w-8 h-8 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto">
+              <div>
+                <h3 className="text-xl font-semibold text-[#2d2e30] mb-3">
                   Multiple Downloads
                 </h3>
-                <p className="text-gray-600">
-                  Pro users can share one file with multiple recipients simultaneously
+                <p className="text-[#6b7280]">
+                  Share one file with multiple recipients simultaneously
                 </p>
               </div>
-              <div className="text-center">
-                <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Crown className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div>
+                <h3 className="text-xl font-semibold text-[#2d2e30] mb-3">
                   Relay Servers
                 </h3>
-                <p className="text-gray-600">
-                  Files stored temporarily on relay servers for better availability
+                <p className="text-[#6b7280]">
+                  Files stored securely for 24 hours for better availability
                 </p>
               </div>
-              <div className="text-center">
-                <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Check className="w-8 h-8 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Three-Tier System
+              <div>
+                <h3 className="text-xl font-semibold text-[#2d2e30] mb-3">
+                  Massive Limits
                 </h3>
-                <p className="text-gray-600">
-                  Anonymous (25MB), Free (100MB), Pro (1GB) with smart limits
+                <p className="text-[#6b7280]">
+                  1GB files and 500GB monthly quota for serious usage
                 </p>
               </div>
             </div>
           </div>
 
-          {/* FAQ */}
-          <div className="mt-16 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-              Frequently Asked Questions
+          {/* Clean FAQ */}
+          <div className="mt-24 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-[#2d2e30] mb-12 text-center">
+              Frequently asked questions
             </h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="space-y-8">
+              <div className="border-b border-gray-100 pb-8">
+                <h3 className="text-lg font-semibold text-[#2d2e30] mb-3">
                   How does the relay server work?
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-[#6b7280] leading-relaxed">
                   Pro users can store encrypted files on our relay servers for up to 24 hours, allowing multiple downloads even if the original sender goes offline.
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="border-b border-gray-100 pb-8">
+                <h3 className="text-lg font-semibold text-[#2d2e30] mb-3">
                   Is my data still secure with relay servers?
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-[#6b7280] leading-relaxed">
                   Yes! Files are encrypted client-side before being sent to relay servers. The encryption key never leaves your browser, so even we can't decrypt your files.
                 </p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-[#2d2e30] mb-3">
                   Can I cancel my subscription?
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-[#6b7280] leading-relaxed">
                   Absolutely. You can cancel anytime and continue using Pro features until the end of your billing period, then automatically switch back to the free plan.
                 </p>
               </div>
