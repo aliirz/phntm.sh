@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "P2PShare - Secure File Sharing",
-  description: "Share files securely with end-to-end encryption and peer-to-peer transfer",
+  title: "🚀 BEAM - Serverless P2P File Sharing",
+  description: "Fight the system! Share files directly peer-to-peer with zero servers. No corporate overlords, just direct encrypted transfers.",
 };
 
 export default function RootLayout({
@@ -29,10 +27,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <Header />
         {children}
-        </AuthProvider>
       </body>
     </html>
   );
