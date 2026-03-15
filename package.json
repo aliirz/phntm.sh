@@ -1,47 +1,28 @@
 {
-  "name": "p2p-share",
+  "name": "phantm",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/auth-ui-react": "^0.4.7",
-    "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.50.0",
-    "crypto-js": "^4.2.0",
+    "@supabase/supabase-js": "^2.99.1",
     "lucide-react": "^0.514.0",
     "next": "15.3.8",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "simple-peer": "^9.11.1",
-    "streamsaver": "^2.0.6",
-    "stripe": "^18.2.1",
-    "uuid": "^11.1.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/simple-peer": "^9.11.8",
-    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "jest": "^30.0.2",
-    "jest-environment-jsdom": "^30.0.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

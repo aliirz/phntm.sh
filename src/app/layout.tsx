@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import { EasterEggs } from "@/components/EasterEggs";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -15,8 +9,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "P2PShare - Secure File Sharing",
-  description: "Share files securely with end-to-end encryption and peer-to-peer transfer",
+  title: "PHANTM — Encrypted file sharing that self-destructs",
+  description:
+    "Drop. Share. Vanish. End-to-end encrypted file sharing with automatic self-destruction. Zero-knowledge. No sign-up required.",
+  openGraph: {
+    title: "PHANTM — Encrypted file sharing that self-destructs",
+    description:
+      "Drop. Share. Vanish. End-to-end encrypted file sharing with automatic self-destruction.",
+  },
 };
 
 export default function RootLayout({
@@ -25,14 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          <Header />
+    <html lang="en" className="dark">
+      <body className={`${geistMono.variable} antialiased`}>
+        <EasterEggs />
         {children}
-        </AuthProvider>
       </body>
     </html>
   );

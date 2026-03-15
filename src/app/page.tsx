@@ -1,172 +1,318 @@
 'use client';
 
-import Link from 'next/link';
-import { Upload, Download, Shield, Users, Zap, Crown, Star, ArrowRight, Sparkles } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { formatFileSize } from '@/lib/auth';
+import { useState, useCallback, useRef } from 'react';
+import { Copy, Check, File as FileIcon, Loader2, X } from 'lucide-react';
+import { AboutModal } from '@/components/AboutModal';
+import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
+import { supabase } from '@/lib/supabase';
+import { generateId, formatFileSize } from '@/lib/utils';
 
-export default function HomePage() {
-  const { user, userLimits, loading } = useAuth();
-  
+type ExpiryOption = { label: string; tag: string; hours: number };
+
+const EXPIRY_OPTIONS: ExpiryOption[] = [
+  { label: '1 hour', tag: '01H', hours: 1 },
+  { label: '6 hours', tag: '06H', hours: 6 },
+  { label: '24 hours', tag: '24H', hours: 24 },
+];
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+type AppState = 'idle' | 'encrypting' | 'uploading' | 'done' | 'error';
+
+export default function Home() {
+  const [state, setState] = useState<AppState>('idle');
+  const [file, setFile] = useState<File | null>(null);
+  const [expiry, setExpiry] = useState<ExpiryOption>(EXPIRY_OPTIONS[2]);
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = useCallback((selectedFile: File) => {
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`FILE_TOO_LARGE: MAX ${formatFileSize(MAX_FILE_SIZE)}`);
+      setState('error');
+      return;
+    }
+    setFile(selectedFile);
+    setError('');
+    setState('idle');
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile) handleFileSelect(droppedFile);
+    },
+    [handleFileSelect]
+  );
+
+  const handleUpload = async () => {
+    if (!file) return;
+    try {
+      setState('encrypting');
+      const key = await generateKey();
+      const keyString = await exportKey(key);
+      const encryptedBlob = await encryptFile(file, key);
+
+      setState('uploading');
+      const fileId = generateId();
+      const expiresAt = new Date(
+        Date.now() + expiry.hours * 60 * 60 * 1000
+      ).toISOString();
+
+      const { error: uploadError } = await supabase.storage
+        .from('files')
+        .upload(fileId, encryptedBlob, {
+          contentType: 'application/octet-stream',
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from('files').insert({
+        id: fileId,
+        file_name: file.name,
+        file_size: file.size,
+        expires_at: expiresAt,
+      });
+      if (dbError) throw dbError;
+
+      setShareUrl(`${window.location.origin}/f/${fileId}#${keyString}`);
+      setState('done');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'TRANSMISSION_FAILED: RETRY'
+      );
+      setState('error');
+    }
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const reset = () => {
+    setState('idle');
+    setFile(null);
+    setShareUrl('');
+    setError('');
+    setCopied(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const isProcessing = state === 'encrypting' || state === 'uploading';
+
+  const statusText = (() => {
+    if (error) return `ERROR: ${error}`;
+    if (state === 'encrypting') return 'ENCRYPTING: AES-256-GCM...';
+    if (state === 'uploading') return 'TRANSMITTING: UPLOADING CIPHERTEXT...';
+    if (state === 'done') return 'TRANSMISSION_COMPLETE: LINK ACTIVE';
+    if (file) return `FILE_LOADED: ${file.name.toUpperCase()} — READY TO TRANSMIT`;
+    return 'SYSTEM_READY: WAITING FOR INPUT...';
+  })();
+
   return (
-    <div className="min-h-screen bg-[#FAFBFC]">
-      {/* Modern Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 py-20">
-        <div className="text-center mb-20">
-          {/* Clean Brand Header */}
-          <div className="mb-16">
-            <h1 className="text-6xl font-black mb-6">
-              <span className="text-[#007574]">kewl</span><span className="text-[#2d2e30]">.app</span>
-            </h1>
-            <p className="text-xl text-[#6b7280] font-light max-w-2xl mx-auto leading-relaxed">
-              Share files instantly with military-grade encryption. 
-              Direct browser-to-browser. No servers. No compromise.
-            </p>
-          </div>
+    <main className="h-screen overflow-hidden flex flex-col bg-bg">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
+        <div className="text-sm tracking-[0.2em] font-bold">
+          PHANTM<span className="cursor-blink">_</span>
+        </div>
+        <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
+          <span className="hidden sm:inline">[ ENCRYPTION ]</span>
+        </div>
+      </header>
 
-          {/* Simple Status Badge */}
-          {!loading && (
-            <div className="inline-flex items-center gap-3 bg-white rounded-full px-6 py-3 shadow-sm border border-gray-100 mb-16">
-              <span className="text-sm font-medium text-[#2d2e30]">
-                {userLimits.isAnonymous ? 'Anonymous' : user?.email}
-              </span>
-              <span className="text-sm text-[#6b7280]">•</span>
-              <span className="text-sm text-[#6b7280]">
-                {formatFileSize(userLimits.maxFileSize)} limit
-              </span>
-              {user?.is_pro && (
-                <>
-                  <span className="text-sm text-[#6b7280]">•</span>
-                  <span className="bg-[#007574] text-white px-3 py-0.5 rounded-full text-xs font-semibold">
-                    PRO
-                  </span>
-                </>
+      {/* Center — Event Horizon / Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFileSelect(f);
+          }}
+        />
+
+        {state !== 'done' ? (
+          <div className="flex flex-col items-center gap-8">
+            {/* The Event Horizon */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              className={`
+                w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2
+                flex flex-col items-center justify-center
+                transition-all duration-100
+                ${isProcessing ? 'pointer-events-none' : 'cursor-pointer'}
+                ${dragOver ? 'event-horizon-dragover' : ''}
+                ${isProcessing ? 'event-horizon-active' : ''}
+                ${!dragOver && !isProcessing ? 'event-horizon' : ''}
+              `}
+            >
+              {/* Idle — no file */}
+              {!isProcessing && !file && (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="text-[11px] text-muted tracking-[0.2em]">
+                    DROP FILE
+                  </div>
+                </div>
+              )}
+
+              {/* Idle — file selected */}
+              {!isProcessing && file && (
+                <div className="flex flex-col items-center gap-2 text-center px-8">
+                  <FileIcon className="w-6 h-6 text-accent" />
+                  <p className="text-xs truncate max-w-[180px]">
+                    {file.name}
+                  </p>
+                  <p className="text-[11px] text-muted">
+                    {formatFileSize(file.size)}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                      setError('');
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="mt-1 text-muted hover:text-danger"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Processing */}
+              {isProcessing && (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                  <p className="text-[11px] text-accent tracking-[0.15em]">
+                    {state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
+                  </p>
+                </div>
               )}
             </div>
-          )}
 
-          {/* Clean Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-            <Link 
-              href="/upload"
-              className="bg-[#007574] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#007574]/90 transition-colors text-center"
-            >
-              Send a File
-            </Link>
-
-            <Link 
-              href="/download"
-              className="bg-white text-[#2d2e30] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-colors border border-gray-200 text-center"
-            >
-              Receive a File
-            </Link>
-          </div>
-        </div>
-
-        {/* Clean Features Grid */}
-        <div className="grid md:grid-cols-3 gap-16 mb-32 max-w-5xl mx-auto">
-          <div>
-            <h3 className="text-xl font-bold text-[#2d2e30] mb-3">Military-Grade Security</h3>
-            <p className="text-[#6b7280] leading-relaxed">
-              AES-256 encryption happens in your browser. Even we can't see your files.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-bold text-[#2d2e30] mb-3">Lightning Fast</h3>
-            <p className="text-[#6b7280] leading-relaxed">
-              Direct browser-to-browser transfers using cutting-edge WebRTC technology
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-bold text-[#2d2e30] mb-3">
-              {userLimits.isAnonymous ? 'Zero Friction' : 'Smart Analytics'}
-            </h3>
-            <p className="text-[#6b7280] leading-relaxed">
-              {userLimits.isAnonymous 
-                ? 'Start sharing instantly. No accounts, no tracking, no hassle.'
-                : 'Track your usage and transfer history with detailed analytics.'
-              }
-            </p>
-          </div>
-        </div>
-
-        {/* Pro Features Banner - Minimal design */}
-        {!user?.is_pro && (
-          <div className="bg-[#2d2e30] rounded-2xl p-16 mb-24">
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold text-white mb-8">Go Pro</h2>
-              <p className="text-lg text-gray-300 mb-12 leading-relaxed">
-                Unlock the full power of kewl.app
-              </p>
-              
-              <div className="grid md:grid-cols-3 gap-12 mb-12 text-left">
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Multiple Downloads</h3>
-                  <p className="text-gray-400 text-sm">Share once, download many times</p>
+            {/* Expiry picker + Upload — shown when file selected */}
+            {file && !isProcessing && (
+              <div className="flex flex-col items-center gap-5">
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-muted tracking-[0.15em]">
+                    SET_EXPIRY:
+                  </span>
+                  {EXPIRY_OPTIONS.map((option) => (
+                    <button
+                      key={option.hours}
+                      onClick={() => setExpiry(option)}
+                      className={`
+                        px-3 py-1.5 text-[11px] tracking-[0.15em] border
+                        ${
+                          expiry.hours === option.hours
+                            ? 'ghost-btn-accent'
+                            : 'ghost-btn'
+                        }
+                      `}
+                    >
+                      {option.tag}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Relay Storage</h3>
-                  <p className="text-gray-400 text-sm">24-hour secure file hosting</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Massive Limits</h3>
-                  <p className="text-gray-400 text-sm">1GB files, 500GB monthly quota</p>
-                </div>
+
+                <button
+                  onClick={handleUpload}
+                  className="ghost-btn-accent px-8 py-3 text-[11px] tracking-[0.2em] border"
+                >
+                  [ ENCRYPT & TRANSMIT ]
+                </button>
               </div>
-              
-              <Link 
-                href="/pricing"
-                className="inline-block bg-[#007574] text-white px-8 py-4 rounded-xl font-semibold hover:bg-[#007574]/90 transition-colors"
+            )}
+
+            {/* Error */}
+            {error && (
+              <button
+                onClick={() => {
+                  setError('');
+                  setState('idle');
+                }}
+                className="text-[11px] text-danger tracking-[0.1em] hover:underline"
               >
-                Upgrade to Pro — $5/mo
-              </Link>
+                [ RETRY ]
+              </button>
+            )}
+          </div>
+        ) : (
+          /* Done — Transmission Complete */
+          <div className="flex flex-col items-center gap-8 w-full max-w-lg">
+            {/* Success indicator */}
+            <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-accent flex items-center justify-center"
+              style={{ boxShadow: '0 0 60px rgba(0, 255, 209, 0.12)' }}
+            >
+              <Check className="w-8 h-8 text-accent" />
             </div>
+
+            {/* Share link */}
+            <div className="w-full space-y-4">
+              <div className="text-[11px] text-muted tracking-[0.15em]">
+                LINK:
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 bg-transparent border border-border px-3 py-2.5 text-[11px] font-mono text-fg truncate focus:border-accent"
+                />
+                <button
+                  onClick={handleCopy}
+                  className="ghost-btn-accent px-4 py-2.5 text-[11px] tracking-[0.15em] border flex items-center gap-2"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      COPIED
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      COPY
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="text-[11px] text-muted tracking-[0.1em]">
+                DESTRUCTION_IN: {expiry.label.toUpperCase().replace(' ', '_')} — AES-256-GCM ENCRYPTED
+              </div>
+            </div>
+
+            <button
+              onClick={reset}
+              className="text-[11px] text-muted tracking-[0.15em] hover:text-fg border-b border-transparent hover:border-fg py-1"
+            >
+              [ NEW TRANSMISSION ]
+            </button>
           </div>
         )}
-
-        {/* How it Works - Simple */}
-        <div className="mb-24">
-          <h2 className="text-2xl font-bold text-[#2d2e30] mb-12 text-center">How It Works</h2>
-          <div className="grid md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-            <div className="text-center">
-              <div className="text-5xl font-black text-[#007574] mb-4">1</div>
-              <h4 className="font-semibold text-[#2d2e30] mb-2">Upload & Encrypt</h4>
-              <p className="text-[#6b7280] text-sm">Your file is encrypted locally</p>
-            </div>
-
-            <div className="text-center">
-              <div className="text-5xl font-black text-[#007574] mb-4">2</div>
-              <h4 className="font-semibold text-[#2d2e30] mb-2">Share Link</h4>
-              <p className="text-[#6b7280] text-sm">Copy the secure URL</p>
-            </div>
-
-            <div className="text-center">
-              <div className="text-5xl font-black text-[#007574] mb-4">3</div>
-              <h4 className="font-semibold text-[#2d2e30] mb-2">Direct Connection</h4>
-              <p className="text-[#6b7280] text-sm">P2P tunnel established</p>
-            </div>
-
-            <div className="text-center">
-              <div className="text-5xl font-black text-[#007574] mb-4">4</div>
-              <h4 className="font-semibold text-[#2d2e30] mb-2">Download</h4>
-              <p className="text-[#6b7280] text-sm">File decrypted & saved</p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Simple Footer */}
-      <footer className="border-t border-gray-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <p className="text-sm text-[#6b7280]">
-              © 2024 kewl.app · Built with Next.js, WebRTC, and AES-256 encryption
-            </p>
-          </div>
-        </div>
+      {/* Status Line */}
+      <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
+        <p className={`text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}>
+          {statusText}
+        </p>
+        <AboutModal />
       </footer>
-    </div>
+    </main>
   );
 }
