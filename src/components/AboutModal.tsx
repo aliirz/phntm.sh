@@ -364,7 +364,7 @@ function PrivacyContent() {
             FILE CONTENTS: &nbsp;&nbsp;&nbsp;NEVER (zero-knowledge)<br />
             FILE NAMES: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STORED (for recipient download)<br />
             DECRYPTION KEYS: NEVER (URL fragment only)<br />
-            IP ADDRESSES: &nbsp;&nbsp;&nbsp;NOT LOGGED<br />
+            IP ADDRESSES: &nbsp;&nbsp;&nbsp;NOT LOGGED BY OUR APP<br />
             USER ACCOUNTS: &nbsp;&nbsp;DO NOT EXIST<br />
             COOKIES: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NONE<br />
             TRACKING SCRIPTS: NONE
@@ -377,10 +377,12 @@ function PrivacyContent() {
             zero-knowledge</span> — we cannot read, preview, or access them.
           </p>
           <p>
-            We collect <span className="text-fg">anonymous, aggregate analytics</span> on
-            server-side API events only: upload count, download count, file sizes,
-            and expiry durations chosen. No personally identifiable information is
-            captured. No IP addresses or user agents are logged.
+            We log <span className="text-fg">anonymous server-side events</span> —
+            uploads, downloads, file sizes, and expiry durations chosen. No
+            personally identifiable information is captured. Our application does
+            not log IP addresses or user agents, though hosting infrastructure
+            (Vercel, Supabase) may generate standard access logs outside our control.
+            Analytics events are automatically purged after 90 days.
           </p>
         </div>
       </div>
@@ -396,9 +398,9 @@ function PrivacyContent() {
             Deletion is automatic and irreversible. No backups are retained.
           </p>
           <p>
-            File metadata (encrypted blob size, expiry timestamp) is purged
+            All file metadata (name, size, expiry timestamp) is purged
             alongside the ciphertext. After expiry, no trace of the
-            transmission remains.
+            transmission remains in our systems.
           </p>
         </div>
       </div>

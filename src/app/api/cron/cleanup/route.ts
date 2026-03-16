@@ -9,38 +9,59 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // List all files in storage
+    // Step 1: Delete expired rows from the files table
+    const { data: expiredFiles, error: deleteError } = await supabaseAdmin
+      .from('files')
+      .delete()
+      .lt('expires_at', new Date().toISOString())
+      .select('id');
+
+    if (deleteError) {
+      return NextResponse.json({ error: 'Failed to delete expired files' }, { status: 500 });
+    }
+
+    const expiredIds = (expiredFiles || []).map((f: { id: string }) => f.id);
+
+    // Step 2: Remove ciphertext from storage for expired files
+    if (expiredIds.length > 0) {
+      await supabaseAdmin.storage.from('files').remove(expiredIds);
+    }
+
+    // Step 3: Clean any orphaned storage files (in storage but not in DB)
     const { data: storageFiles, error: listError } = await supabaseAdmin.storage
       .from('files')
       .list();
 
-    if (listError || !storageFiles) {
-      return NextResponse.json({ error: 'Failed to list storage files' }, { status: 500 });
+    let orphanedCount = 0;
+    if (!listError && storageFiles) {
+      const { data: dbFiles } = await supabaseAdmin
+        .from('files')
+        .select('id');
+
+      const validIds = new Set((dbFiles || []).map((f: { id: string }) => f.id));
+      const orphaned = storageFiles
+        .filter((f) => !validIds.has(f.name))
+        .map((f) => f.name);
+
+      if (orphaned.length > 0) {
+        await supabaseAdmin.storage.from('files').remove(orphaned);
+      }
+      orphanedCount = orphaned.length;
     }
 
-    // Get all valid (non-expired) file IDs from DB
-    const { data: dbFiles, error: dbError } = await supabaseAdmin
-      .from('files')
+    // Step 4: Purge analytics events older than 90 days
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: purgedRows } = await supabaseAdmin
+      .from('analytics_events')
+      .delete()
+      .lt('created_at', ninetyDaysAgo)
       .select('id');
-
-    if (dbError) {
-      return NextResponse.json({ error: 'Failed to query DB' }, { status: 500 });
-    }
-
-    const validIds = new Set((dbFiles || []).map((f: { id: string }) => f.id));
-
-    // Find orphaned storage files (in storage but not in DB = expired and cleaned from DB)
-    const orphaned = storageFiles
-      .filter((f) => !validIds.has(f.name))
-      .map((f) => f.name);
-
-    if (orphaned.length > 0) {
-      await supabaseAdmin.storage.from('files').remove(orphaned);
-    }
+    const purgedAnalytics = purgedRows?.length ?? 0;
 
     return NextResponse.json({
-      cleaned: orphaned.length,
-      remaining: storageFiles.length - orphaned.length,
+      expired_deleted: expiredIds.length,
+      orphaned_cleaned: orphanedCount,
+      analytics_purged: purgedAnalytics ?? 0,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
