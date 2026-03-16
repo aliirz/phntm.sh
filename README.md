@@ -1,70 +1,118 @@
-# PHNTM
+<p align="center">
+  <br />
+  <code>&nbsp;P H N T M&nbsp;</code>
+  <br />
+  <br />
+  <strong>Drop. Share. Vanish.</strong>
+  <br />
+  <br />
+  <a href="https://phntm.sh">phntm.sh</a> &nbsp;&middot;&nbsp;
+  <a href="#how-it-works">How It Works</a> &nbsp;&middot;&nbsp;
+  <a href="SELF-HOSTING.md">Self-Host</a> &nbsp;&middot;&nbsp;
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
 
-Encrypted file sharing that self-destructs. Zero-knowledge. No sign-up required.
+<br />
 
-**[phntm.sh](https://phntm.sh)**
+<p align="center">
+  <a href="https://github.com/aliirz/phntm.sh/actions/workflows/test.yml"><img src="https://github.com/aliirz/phntm.sh/actions/workflows/test.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" /></a>
+</p>
 
-## How it works
+---
 
-1. You drop a file — it's encrypted in your browser with **AES-256-GCM**
-2. Only the ciphertext is uploaded — the server never sees your data
-3. You get a share link with the decryption key in the URL fragment (`#`)
-4. The recipient opens the link, downloads the ciphertext, and decrypts it in their browser
-5. The file self-destructs after 1, 6, or 24 hours
+PHNTM is an encrypted, self-destructing file sharing tool. Files are encrypted in your browser before they leave your machine. The server only ever touches ciphertext. No accounts. No tracking. No logs. Files are permanently destroyed when the timer runs out.
 
-The decryption key never leaves the browser. The URL fragment (`#key`) is never sent to the server. We store only ciphertext — indistinguishable from random noise without the key.
+Think of it as a dead drop — you leave the package, share the coordinates, and walk away.
 
-## Quick start
+## How It Works
+
+```
+  YOU                             SERVER                        RECIPIENT
+   |                                |                               |
+   |  1. encrypt(file, key)         |                               |
+   |  2. upload ciphertext -------->|  stores encrypted blob        |
+   |  3. get link: /f/id#key        |                               |
+   |                                |                               |
+   |          share link ------------------------------------------>|
+   |                                |                               |
+   |                                |  4. fetch ciphertext  <-------|
+   |                                |  --------------------------->  |
+   |                                |                5. decrypt(blob, key)
+   |                                |                6. save file   |
+```
+
+The decryption key lives in the URL fragment (`#key`). Browsers never send fragments to servers — not ours, not anyone's. The server is cryptographically blind.
+
+**Encryption:** AES-256-GCM with a unique 256-bit key per file, random IV, via the Web Crypto API.
+
+**Expiry:** Files self-destruct after 1, 6, or 24 hours. Ciphertext, metadata, and file names are permanently purged. No backups. No traces.
+
+## Quick Start
 
 ```bash
 git clone https://github.com/aliirz/phntm.sh.git
 cd phntm.sh
 npm install
-cp .env.example .env.local
-# Add your Supabase credentials to .env.local
-npm run dev
+cp .env.example .env.local    # add your Supabase credentials
+npm run dev                    # localhost:3000
 ```
 
-See [SELF-HOSTING.md](SELF-HOSTING.md) for full setup instructions including Supabase configuration.
+You'll need a [Supabase](https://supabase.com) project (free tier works). Run `supabase-setup.sql` in the SQL Editor to create the required tables and storage bucket. Full instructions in [SELF-HOSTING.md](SELF-HOSTING.md).
 
-## Tech stack
+## Security Model
 
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **AES-256-GCM** encryption via Web Crypto API
-- **Supabase** for encrypted blob storage + metadata
-- **Tailwind CSS 4** with a terminal/cyberpunk aesthetic
+| | Status |
+|---|---|
+| **File contents** | Encrypted client-side with AES-256-GCM. Server stores only ciphertext. |
+| **Decryption keys** | Exist only in the URL fragment. Never transmitted to any server. |
+| **File names** | Stored server-side so recipients can save files correctly. Purged on expiry. |
+| **IP addresses** | Not logged by the application. Hosting infra may generate standard access logs. |
+| **Cookies & tracking** | None. Zero. |
+| **Expired data** | Automatically and permanently purged — ciphertext, metadata, analytics. |
+| **Analytics** | Anonymous server-side event counts only. No PII. Auto-purged after 90 days. |
+
+The encryption implementation is a single file: [`src/lib/encryption.ts`](src/lib/encryption.ts). Read it. Audit it. That's the point.
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 15 (App Router), React 19, TypeScript |
+| Encryption | AES-256-GCM via Web Crypto API |
+| Storage | Supabase (Postgres + S3-compatible storage) |
+| Styling | Tailwind CSS 4 |
+| Testing | Vitest + React Testing Library |
+| Deployment | Vercel, Docker, or any Node.js host |
 
 ## Development
 
 ```bash
-npm run dev           # Dev server on localhost:3000
-npm run lint          # ESLint
-npx tsc --noEmit      # Type checking
-npm test              # Vitest test suite
-npm run build         # Production build
+npm run dev           # dev server
+npm run lint          # eslint
+npx tsc --noEmit      # type check
+npm test              # test suite
+npm run build         # production build
 ```
 
-## Security model
+## Deploy Your Own
 
-| What | Where |
-|---|---|
-| File contents | Encrypted client-side, server only sees ciphertext |
-| Decryption key | URL fragment only — never sent to server |
-| File names | Stored server-side for recipient UX, purged on expiry |
-| IP addresses | Not logged by the application |
-| Cookies / tracking | None |
-| Expired data | Automatically purged — ciphertext, metadata, and analytics |
+PHNTM is designed to be self-hosted. Bring your own Supabase project, deploy anywhere.
 
-The encryption core is [`src/lib/encryption.ts`](src/lib/encryption.ts) — audit it.
+**Vercel** — Fork, import, add env vars, deploy. Cron cleanup runs automatically.
 
-## Self-hosting
+**Docker** — `docker build -t phntm . && docker run -p 3000:3000 --env-file .env.local phntm`
 
-PHNTM is designed to be self-hosted. Bring your own Supabase project and deploy anywhere that runs Node.js. See [SELF-HOSTING.md](SELF-HOSTING.md).
+**Anywhere** — `npm run build && npm start` on any Node.js host.
+
+Full guide: [SELF-HOSTING.md](SELF-HOSTING.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
+
+If you find a security issue, **do not open a public issue** — use GitHub's private security advisory or contact the maintainer directly.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — do whatever you want with it.
