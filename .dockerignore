@@ -1,0 +1,6 @@
+node_modules
+.next
+.env*
+.git
+*.md
+!SELF-HOSTING.md

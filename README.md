@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PHNTM
 
-## Getting Started
+Encrypted file sharing that self-destructs. Zero-knowledge. No sign-up required.
 
-First, run the development server:
+**[phntm.sh](https://phntm.sh)**
+
+## How it works
+
+1. You drop a file — it's encrypted in your browser with **AES-256-GCM**
+2. Only the ciphertext is uploaded — the server never sees your data
+3. You get a share link with the decryption key in the URL fragment (`#`)
+4. The recipient opens the link, downloads the ciphertext, and decrypts it in their browser
+5. The file self-destructs after 1, 6, or 24 hours
+
+The decryption key never leaves the browser. The URL fragment (`#key`) is never sent to the server. We store only ciphertext — indistinguishable from random noise without the key.
+
+## Quick start
 
 ```bash
+git clone https://github.com/aliirz/phntm.sh.git
+cd phntm.sh
+npm install
+cp .env.example .env.local
+# Add your Supabase credentials to .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+See [SELF-HOSTING.md](SELF-HOSTING.md) for full setup instructions including Supabase configuration.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **AES-256-GCM** encryption via Web Crypto API
+- **Supabase** for encrypted blob storage + metadata
+- **Tailwind CSS 4** with a terminal/cyberpunk aesthetic
 
-## Learn More
+## Development
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev           # Dev server on localhost:3000
+npm run lint          # ESLint
+npx tsc --noEmit      # Type checking
+npm test              # Vitest test suite
+npm run build         # Production build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Security model
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| What | Where |
+|---|---|
+| File contents | Encrypted client-side, server only sees ciphertext |
+| Decryption key | URL fragment only — never sent to server |
+| File names | Stored server-side for recipient UX, purged on expiry |
+| IP addresses | Not logged by the application |
+| Cookies / tracking | None |
+| Expired data | Automatically purged — ciphertext, metadata, and analytics |
 
-## Deploy on Vercel
+The encryption core is [`src/lib/encryption.ts`](src/lib/encryption.ts) — audit it.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Self-hosting
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+PHNTM is designed to be self-hosted. Bring your own Supabase project and deploy anywhere that runs Node.js. See [SELF-HOSTING.md](SELF-HOSTING.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
