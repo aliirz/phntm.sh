@@ -59,10 +59,19 @@ describe('HomePage', () => {
   });
 
   it('completes upload flow and shows share URL', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id: 'abc123' }),
-    });
+    const mockFetch = vi.fn()
+      // Step 1: POST /api/upload — returns presigned URL
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'abc123', upload_url: 'https://storage.example.com/upload', token: 'tok' }),
+      })
+      // Step 2: PUT to storage — direct upload
+      .mockResolvedValueOnce({ ok: true })
+      // Step 3: POST /api/upload/confirm
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'abc123' }),
+      });
     vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);
@@ -102,10 +111,10 @@ describe('HomePage', () => {
   });
 
   it('resets state with NEW TRANSMISSION button', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id: 'abc123' }),
-    });
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 'abc123', upload_url: 'https://storage.example.com/upload', token: 'tok' }) })
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 'abc123' }) });
     vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);
@@ -124,10 +133,10 @@ describe('HomePage', () => {
   });
 
   it('copies share URL to clipboard', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id: 'abc123' }),
-    });
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 'abc123', upload_url: 'https://storage.example.com/upload', token: 'tok' }) })
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 'abc123' }) });
     vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);

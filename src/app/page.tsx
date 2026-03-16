@@ -58,23 +58,55 @@ export default function Home() {
       const encryptedBlob = await encryptFile(file, key);
 
       setState('uploading');
-      const formData = new FormData();
-      formData.append('file', encryptedBlob);
-      formData.append('file_name', file.name);
-      formData.append('file_size', file.size.toString());
-      formData.append('expiry_hours', expiry.hours.toString());
 
-      const res = await fetch('/api/upload', {
+      // Step 1: Get presigned upload URL (small JSON request — no file data)
+      const initRes = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_size: file.size,
+          expiry_hours: expiry.hours,
+        }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Upload failed');
+      if (!initRes.ok) {
+        const data = await initRes.json();
+        throw new Error(data.error || 'Upload init failed');
       }
 
-      const { id: fileId } = await res.json();
+      const { id: fileId, upload_url, token } = await initRes.json();
+
+      // Step 2: Upload encrypted blob directly to Supabase Storage (bypasses Vercel limit)
+      const uploadRes = await fetch(upload_url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          Authorization: `Bearer ${token}`,
+        },
+        body: encryptedBlob,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Storage upload failed');
+      }
+
+      // Step 3: Confirm upload and create DB record
+      const confirmRes = await fetch('/api/upload/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: fileId,
+          file_name: file.name,
+          file_size: file.size,
+          expiry_hours: expiry.hours,
+        }),
+      });
+
+      if (!confirmRes.ok) {
+        const data = await confirmRes.json();
+        throw new Error(data.error || 'Upload confirmation failed');
+      }
       setShareUrl(`${window.location.origin}/f/${fileId}#${keyString}`);
       setState('done');
     } catch (err) {

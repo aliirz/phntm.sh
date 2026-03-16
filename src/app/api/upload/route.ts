@@ -2,15 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { trackEvent } from '@/lib/analytics';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-// Allow up to 512MB request body
-export const maxDuration = 60;
-
 const MAX_FILE_SIZE = 512 * 1024 * 1024; // 512MB
 const VALID_EXPIRY_HOURS = [1, 6, 24];
 
@@ -26,21 +17,18 @@ function generateId(length = 10): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const fileName = formData.get('file_name') as string | null;
-    const fileSizeStr = formData.get('file_size') as string | null;
-    const expiryHoursStr = formData.get('expiry_hours') as string | null;
+    const body = await request.json();
+    const { file_name, file_size, expiry_hours } = body;
 
-    if (!file || !fileName || !fileSizeStr || !expiryHoursStr) {
+    if (!file_name || !file_size || !expiry_hours) {
       return NextResponse.json(
-        { error: 'Missing required fields: file, file_name, file_size, expiry_hours' },
+        { error: 'Missing required fields: file_name, file_size, expiry_hours' },
         { status: 400 }
       );
     }
 
-    const fileSize = parseInt(fileSizeStr, 10);
-    const expiryHours = parseInt(expiryHoursStr, 10);
+    const fileSize = Number(file_size);
+    const expiryHours = Number(expiry_hours);
 
     if (fileSize > MAX_FILE_SIZE) {
       trackEvent('upload.rejected', { reason: 'file_too_large', file_size: fileSize });
@@ -59,42 +47,24 @@ export async function POST(request: NextRequest) {
     }
 
     const fileId = generateId();
-    const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString();
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const { error: uploadError } = await supabaseAdmin.storage
+    // Create a signed upload URL — client uploads directly to Supabase Storage
+    const { data: signedData, error: signError } = await supabaseAdmin.storage
       .from('files')
-      .upload(fileId, buffer, {
-        contentType: 'application/octet-stream',
-        upsert: false,
-      });
+      .createSignedUploadUrl(fileId);
 
-    if (uploadError) {
+    if (signError || !signedData) {
       return NextResponse.json(
-        { error: 'Upload failed' },
+        { error: 'Failed to create upload URL' },
         { status: 500 }
       );
     }
 
-    const { error: dbError } = await supabaseAdmin.from('files').insert({
+    return NextResponse.json({
       id: fileId,
-      file_name: fileName,
-      file_size: fileSize,
-      expires_at: expiresAt,
+      upload_url: signedData.signedUrl,
+      token: signedData.token,
     });
-
-    if (dbError) {
-      // Clean up storage if DB insert fails
-      await supabaseAdmin.storage.from('files').remove([fileId]);
-      return NextResponse.json(
-        { error: 'Failed to save file metadata' },
-        { status: 500 }
-      );
-    }
-
-    trackEvent('file.uploaded', { file_size: fileSize, expiry_hours: expiryHours });
-    return NextResponse.json({ id: fileId });
   } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
