@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { trackEvent } from '@/lib/analytics';
 
 export async function GET(
   _request: NextRequest,
@@ -22,6 +23,7 @@ export async function GET(
   }
 
   if (new Date(fileMeta.expires_at) < new Date()) {
+    trackEvent('file.expired_access', {});
     return NextResponse.json(
       { error: 'File expired' },
       { status: 410 }
@@ -42,6 +44,7 @@ export async function GET(
 
   const buffer = Buffer.from(await blob.arrayBuffer());
 
+  trackEvent('file.downloaded', { file_size: buffer.length });
   return new NextResponse(buffer, {
     headers: {
       'Content-Type': 'application/octet-stream',
