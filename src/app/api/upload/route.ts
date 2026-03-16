@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { trackEvent } from '@/lib/analytics';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const VALID_EXPIRY_HOURS = [1, 6, 24];
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
     const expiryHours = parseInt(expiryHoursStr, 10);
 
     if (fileSize > MAX_FILE_SIZE) {
+      trackEvent('upload.rejected', { reason: 'file_too_large', file_size: fileSize });
       return NextResponse.json(
         { error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB` },
         { status: 413 }
@@ -40,6 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!VALID_EXPIRY_HOURS.includes(expiryHours)) {
+      trackEvent('upload.rejected', { reason: 'invalid_expiry', expiry_hours: expiryHours });
       return NextResponse.json(
         { error: `Invalid expiry. Must be one of: ${VALID_EXPIRY_HOURS.join(', ')} hours` },
         { status: 400 }
@@ -81,6 +84,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    trackEvent('file.uploaded', { file_size: fileSize, expiry_hours: expiryHours });
     return NextResponse.json({ id: fileId });
   } catch {
     return NextResponse.json(

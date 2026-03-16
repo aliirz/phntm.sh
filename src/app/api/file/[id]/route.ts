@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { trackEvent } from '@/lib/analytics';
 
 export async function GET(
   _request: NextRequest,
@@ -21,11 +22,13 @@ export async function GET(
   }
 
   if (new Date(data.expires_at) < new Date()) {
+    trackEvent('file.expired_access', {});
     return NextResponse.json(
       { error: 'File expired' },
       { status: 410 }
     );
   }
 
+  trackEvent('file.metadata_viewed', {});
   return NextResponse.json(data);
 }
