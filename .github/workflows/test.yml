@@ -29,6 +29,9 @@ jobs:
       - name: Run linting
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Check build
         env:
           SUPABASE_URL: https://placeholder.supabase.co
