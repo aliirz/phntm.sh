@@ -35,13 +35,13 @@ describe('HomePage', () => {
     expect(screen.getByText(/ENCRYPT & TRANSMIT/)).toBeInTheDocument();
   });
 
-  it('rejects files over 50MB', async () => {
+  it('rejects files over 512MB', async () => {
     render(<Home />);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
 
     // Create a file object with a large size
     const largeFile = new File(['x'], 'big.bin', { type: 'application/octet-stream' });
-    Object.defineProperty(largeFile, 'size', { value: 60 * 1024 * 1024 });
+    Object.defineProperty(largeFile, 'size', { value: 600 * 1024 * 1024 });
     await userEvent.upload(input, largeFile);
 
     expect(screen.getByText(/FILE_TOO_LARGE/)).toBeInTheDocument();
