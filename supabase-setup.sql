@@ -1,5 +1,5 @@
 -- ============================================
--- PHANTM - Supabase Setup
+-- PHNTM - Supabase Setup
 -- Run this in your Supabase SQL Editor
 -- ============================================
 

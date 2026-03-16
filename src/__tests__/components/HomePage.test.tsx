@@ -19,7 +19,7 @@ describe('HomePage', () => {
 
   it('renders initial state', () => {
     render(<Home />);
-    expect(screen.getByText('PHANTM')).toBeInTheDocument();
+    expect(screen.getByText('PHNTM')).toBeInTheDocument();
     expect(screen.getByText('DROP FILE')).toBeInTheDocument();
     expect(screen.getByText(/SYSTEM_READY/)).toBeInTheDocument();
   });

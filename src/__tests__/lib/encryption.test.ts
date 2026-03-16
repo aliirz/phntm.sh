@@ -47,7 +47,7 @@ describe('encryption', () => {
 
   describe('encrypt + decrypt round-trip', () => {
     it('recovers the original file content', async () => {
-      const content = 'Hello, PHANTM! This is a secret message.';
+      const content = 'Hello, PHNTM! This is a secret message.';
       const file = createMockFile(content);
       const key = await generateKey();
 

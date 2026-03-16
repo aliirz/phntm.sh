@@ -50,7 +50,7 @@ export function AboutModal() {
                 ████ DECLASSIFIED ████
               </div>
               <div className="text-[10px] text-muted tracking-[0.15em] mt-1">
-                DOCUMENT ID: PHANTM-001 &nbsp;|&nbsp; CLEARANCE: PUBLIC
+                DOCUMENT ID: PHNTM-001 &nbsp;|&nbsp; CLEARANCE: PUBLIC
               </div>
             </div>
 
@@ -64,7 +64,7 @@ export function AboutModal() {
                 </div>
                 <div className="text-muted border-l border-border pl-4 space-y-2">
                   <p>
-                    <span className="text-fg">PHANTM</span> is a zero-knowledge file transmission
+                    <span className="text-fg">PHNTM</span> is a zero-knowledge file transmission
                     system. Files are encrypted in your browser before they ever leave your machine.
                     No accounts. No tracking. No logs. Files self-destruct after the timer expires.
                   </p>

@@ -9,11 +9,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PHANTM — Encrypted file sharing that self-destructs",
+  title: "PHNTM — Encrypted file sharing that self-destructs",
   description:
     "Drop. Share. Vanish. End-to-end encrypted file sharing with automatic self-destruction. Zero-knowledge. No sign-up required.",
   openGraph: {
-    title: "PHANTM — Encrypted file sharing that self-destructs",
+    title: "PHNTM — Encrypted file sharing that self-destructs",
     description:
       "Drop. Share. Vanish. End-to-end encrypted file sharing with automatic self-destruction.",
   },

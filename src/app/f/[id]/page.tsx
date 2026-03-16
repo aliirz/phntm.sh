@@ -160,7 +160,7 @@ export default function DownloadPage({
       {/* Header */}
       <header className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
         <Link href="/" className="text-sm tracking-[0.2em] font-bold hover:text-accent">
-          PHANTM<span className="cursor-blink">_</span>
+          PHNTM<span className="cursor-blink">_</span>
         </Link>
         {fileData && !['expired', 'not-found', 'no-key', 'error'].includes(state) && (
           <div className="text-[11px] text-accent tracking-[0.15em] font-mono">

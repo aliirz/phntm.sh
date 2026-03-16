@@ -148,7 +148,7 @@ export default function Home() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
         <div className="text-sm tracking-[0.2em] font-bold">
-          PHANTM<span className="cursor-blink">_</span>
+          PHNTM<span className="cursor-blink">_</span>
         </div>
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
           <span className="hidden sm:inline">[ ENCRYPTION ]</span>
