@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/encryption';
-import { supabase } from '@/lib/supabase';
 import { formatFileSize } from '@/lib/utils';
 
 type FileMetadata = {
@@ -54,22 +53,19 @@ export default function DownloadPage({
     }
 
     async function loadFile() {
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const res = await fetch(`/api/file/${id}`);
 
-      if (error || !data) {
-        setState('not-found');
-        return;
-      }
-
-      if (new Date(data.expires_at) < new Date()) {
+      if (res.status === 410) {
         setState('expired');
         return;
       }
 
+      if (!res.ok) {
+        setState('not-found');
+        return;
+      }
+
+      const data = await res.json();
       setFileData(data);
       setState('ready');
     }
@@ -117,11 +113,11 @@ export default function DownloadPage({
       const keyString = window.location.hash.slice(1);
 
       setState('downloading');
-      const { data: blob, error: downloadError } = await supabase.storage
-        .from('files')
-        .download(fileData.id);
+      const downloadRes = await fetch(`/api/download/${fileData.id}`);
 
-      if (downloadError || !blob) throw new Error('DOWNLOAD_FAILED');
+      if (!downloadRes.ok) throw new Error('DOWNLOAD_FAILED');
+
+      const blob = await downloadRes.blob();
 
       setState('decrypting');
       const key = await importKey(keyString);

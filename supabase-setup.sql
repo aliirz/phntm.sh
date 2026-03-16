@@ -1,5 +1,5 @@
 -- ============================================
--- Beam - Supabase Setup
+-- PHANTM - Supabase Setup
 -- Run this in your Supabase SQL Editor
 -- ============================================
 

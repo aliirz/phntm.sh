@@ -4,8 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Copy, Check, File as FileIcon, Loader2, X } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
-import { supabase } from '@/lib/supabase';
-import { generateId, formatFileSize } from '@/lib/utils';
+import { formatFileSize } from '@/lib/utils';
 
 type ExpiryOption = { label: string; tag: string; hours: number };
 
@@ -59,27 +58,23 @@ export default function Home() {
       const encryptedBlob = await encryptFile(file, key);
 
       setState('uploading');
-      const fileId = generateId();
-      const expiresAt = new Date(
-        Date.now() + expiry.hours * 60 * 60 * 1000
-      ).toISOString();
+      const formData = new FormData();
+      formData.append('file', encryptedBlob);
+      formData.append('file_name', file.name);
+      formData.append('file_size', file.size.toString());
+      formData.append('expiry_hours', expiry.hours.toString());
 
-      const { error: uploadError } = await supabase.storage
-        .from('files')
-        .upload(fileId, encryptedBlob, {
-          contentType: 'application/octet-stream',
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
-
-      const { error: dbError } = await supabase.from('files').insert({
-        id: fileId,
-        file_name: file.name,
-        file_size: file.size,
-        expires_at: expiresAt,
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
-      if (dbError) throw dbError;
 
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      const { id: fileId } = await res.json();
       setShareUrl(`${window.location.origin}/f/${fileId}#${keyString}`);
       setState('done');
     } catch (err) {
