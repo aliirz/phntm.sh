@@ -28,7 +28,7 @@ export async function importKey(encoded: string): Promise<CryptoKey> {
 
 export async function encryptFile(file: File, key: CryptoKey): Promise<Blob> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const data = await file.arrayBuffer();
+  const data = new Uint8Array(await file.arrayBuffer());
   const encrypted = await crypto.subtle.encrypt(
     { name: ALGORITHM, iv },
     key,
