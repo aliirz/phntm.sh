@@ -50,7 +50,7 @@ describe('POST /api/upload', () => {
     const req = createUploadRequest({
       file: new Blob(['x']),
       file_name: 'big.bin',
-      file_size: String(60 * 1024 * 1024), // 60MB
+      file_size: String(600 * 1024 * 1024), // 600MB
       expiry_hours: '24',
     });
     const res = await POST(req);
