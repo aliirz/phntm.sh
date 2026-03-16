@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
+// Mock analytics — must be before route import
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
+}));
+
 // Mock supabase before importing the route
 const mockUpload = vi.fn();
 const mockInsert = vi.fn();

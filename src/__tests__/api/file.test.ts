@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
+}));
+
 const mockSingle = vi.fn();
 
 vi.mock('@/lib/supabase-server', () => ({
