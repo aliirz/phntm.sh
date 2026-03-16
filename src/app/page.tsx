@@ -14,7 +14,7 @@ const EXPIRY_OPTIONS: ExpiryOption[] = [
   { label: '24 hours', tag: '24H', hours: 24 },
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = 512 * 1024 * 1024;
 
 type AppState = 'idle' | 'encrypting' | 'uploading' | 'done' | 'error';
 

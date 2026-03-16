@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Allow up to 512MB request body
+export const maxDuration = 60;
+
+const MAX_FILE_SIZE = 512 * 1024 * 1024; // 512MB
 const VALID_EXPIRY_HOURS = [1, 6, 24];
 
 function generateId(length = 10): string {
