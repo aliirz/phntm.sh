@@ -39,10 +39,10 @@ esac
 
 # Get latest version
 info "LOCATING_LATEST_RELEASE..."
-LATEST=$(curl -sI "https://github.com/$REPO/releases/latest" | grep -i "^location:" | sed 's/.*tag\\///' | tr -d '\\r\\n')
+LATEST=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "\\([^"]*\\)".*/\\1/')
 
 if [ -z "$LATEST" ]; then
-  error "Failed to determine latest version"
+  error "Failed to determine latest version. Is github.com/$REPO public?"
 fi
 
 info "VERSION: $LATEST"
