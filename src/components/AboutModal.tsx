@@ -187,9 +187,10 @@ function AboutContent() {
             Not even if compelled.
           </p>
           <p>
-            No file names are exposed to storage. No IP logs are kept.
-            When the timer hits zero, the ciphertext is permanently purged.
-            No traces remain.
+            We store the original file name solely so the recipient can save
+            the file correctly — it is purged with the ciphertext on expiry.
+            No IP logs are kept. When the timer hits zero, all data is
+            permanently destroyed. No traces remain.
           </p>
         </div>
       </div>
@@ -361,7 +362,7 @@ function PrivacyContent() {
         <div className="text-muted border-l border-border pl-4 space-y-2">
           <p className="font-mono text-[10px] text-fg/60 py-2 px-3 bg-white/[0.02] border border-border">
             FILE CONTENTS: &nbsp;&nbsp;&nbsp;NEVER (zero-knowledge)<br />
-            FILE NAMES: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NEVER (not sent to server)<br />
+            FILE NAMES: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STORED (for recipient download)<br />
             DECRYPTION KEYS: NEVER (URL fragment only)<br />
             IP ADDRESSES: &nbsp;&nbsp;&nbsp;NOT LOGGED<br />
             USER ACCOUNTS: &nbsp;&nbsp;DO NOT EXIST<br />
@@ -369,10 +370,17 @@ function PrivacyContent() {
             TRACKING SCRIPTS: NONE
           </p>
           <p>
+            We store the <span className="text-fg">original file name</span> so the
+            recipient can identify and save the file with its correct name.
+            File names are deleted alongside the ciphertext when the expiry
+            timer reaches zero. <span className="text-fg">File contents remain
+            zero-knowledge</span> — we cannot read, preview, or access them.
+          </p>
+          <p>
             We collect <span className="text-fg">anonymous, aggregate analytics</span> on
             server-side API events only: upload count, download count, file sizes,
             and expiry durations chosen. No personally identifiable information is
-            captured. No IP addresses, user agents, or file names are logged.
+            captured. No IP addresses or user agents are logged.
           </p>
         </div>
       </div>
