@@ -116,6 +116,11 @@ export function AboutModal() {
                 >
                   ALIIRZ
                 </a>
+                <div className="text-[10px] text-muted tracking-[0.1em] mt-2">
+                  <a href="mailto:ali@aliirz.com" className="text-accent/60 hover:text-accent border-b border-accent/20 hover:border-accent">
+                    ali@aliirz.com
+                  </a>
+                </div>
                 <div className="text-[10px] text-muted/40 tracking-[0.1em] pt-2">
                   &quot;The world calls for wetwork, and we answer. No greater good.
                   No just cause.&quot;
@@ -442,7 +447,9 @@ function PrivacyContent() {
         </div>
         <div className="text-muted border-l border-border pl-4 space-y-2">
           <p>
-            For privacy inquiries, contact us via the repository at{' '}
+            For privacy inquiries, contact{' '}
+            <a href="mailto:ali@aliirz.com" className="text-accent hover:text-fg border-b border-accent/30 hover:border-fg">ali@aliirz.com</a>{' '}
+            or via the repository at{' '}
             <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-fg border-b border-accent/30 hover:border-fg">github.com/aliirz/phntm.sh</a>.
           </p>
         </div>
