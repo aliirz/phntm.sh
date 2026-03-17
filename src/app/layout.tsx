@@ -29,6 +29,7 @@ export default function RootLayout({
       <body className={`${geistMono.variable} antialiased`}>
         <EasterEggs />
         {children}
+        <Analytics />
       </body>
     </html>
   );
