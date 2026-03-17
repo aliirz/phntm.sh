@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.514.0",
     "next": "15.3.8",
     "react": "^19.0.0",
