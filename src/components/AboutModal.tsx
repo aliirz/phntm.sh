@@ -443,7 +443,7 @@ function PrivacyContent() {
         <div className="text-muted border-l border-border pl-4 space-y-2">
           <p>
             For privacy inquiries, contact us via the repository at{' '}
-            <span className="text-fg">github.com/aliirz/phntm.sh</span>.
+            <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-fg border-b border-accent/30 hover:border-fg">github.com/aliirz/phntm.sh</a>.
           </p>
         </div>
       </div>
