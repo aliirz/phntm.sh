@@ -19,7 +19,7 @@ export async function importKey(encoded: string): Promise<CryptoKey> {
   const raw = base64urlToBuffer(encoded);
   return crypto.subtle.importKey(
     'raw',
-    raw.buffer as ArrayBuffer,
+    new Uint8Array(raw) as BufferSource,
     { name: ALGORITHM, length: KEY_LENGTH },
     false,
     ['decrypt']
