@@ -33,7 +33,11 @@ import { POST as confirmPOST } from '@/app/api/upload/confirm/route';
 function createJsonRequest(url: string, body: Record<string, unknown>): NextRequest {
   return new NextRequest(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'origin': 'http://localhost',
+      'host': 'localhost',
+    },
     body: JSON.stringify(body),
   });
 }

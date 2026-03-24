@@ -28,7 +28,7 @@ vi.mock('@/lib/supabase-server', () => ({
 import { GET } from '@/app/api/download/[id]/route';
 
 function createRequest(): NextRequest {
-  return new NextRequest('http://localhost/api/download/test-id');
+  return new NextRequest('http://localhost/api/download/aBcDeFgH01');
 }
 
 function createParams(id: string) {
@@ -43,7 +43,7 @@ describe('GET /api/download/[id]', () => {
   it('returns ciphertext blob on success', async () => {
     const ciphertext = new Uint8Array([1, 2, 3, 4, 5]);
     mockDbSingle.mockResolvedValue({
-      data: { id: 'test-id', expires_at: new Date(Date.now() + 3600000).toISOString() },
+      data: { id: 'aBcDeFgH01', expires_at: new Date(Date.now() + 3600000).toISOString() },
       error: null,
     });
     mockStorageDownload.mockResolvedValue({
@@ -51,7 +51,7 @@ describe('GET /api/download/[id]', () => {
       error: null,
     });
 
-    const res = await GET(createRequest(), createParams('test-id'));
+    const res = await GET(createRequest(), createParams('aBcDeFgH01'));
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('application/octet-stream');
     expect(res.headers.get('Content-Length')).toBe('5');
@@ -62,23 +62,23 @@ describe('GET /api/download/[id]', () => {
   it('returns 404 when file not found', async () => {
     mockDbSingle.mockResolvedValue({ data: null, error: { message: 'not found' } });
 
-    const res = await GET(createRequest(), createParams('missing'));
+    const res = await GET(createRequest(), createParams('xYzMiSsInG'));
     expect(res.status).toBe(404);
   });
 
   it('returns 410 when file is expired', async () => {
     mockDbSingle.mockResolvedValue({
-      data: { id: 'expired', expires_at: new Date(Date.now() - 3600000).toISOString() },
+      data: { id: 'eXpIrEdId0', expires_at: new Date(Date.now() - 3600000).toISOString() },
       error: null,
     });
 
-    const res = await GET(createRequest(), createParams('expired'));
+    const res = await GET(createRequest(), createParams('eXpIrEdId0'));
     expect(res.status).toBe(410);
   });
 
   it('returns 500 when storage download fails', async () => {
     mockDbSingle.mockResolvedValue({
-      data: { id: 'test-id', expires_at: new Date(Date.now() + 3600000).toISOString() },
+      data: { id: 'aBcDeFgH01', expires_at: new Date(Date.now() + 3600000).toISOString() },
       error: null,
     });
     mockStorageDownload.mockResolvedValue({
@@ -86,7 +86,7 @@ describe('GET /api/download/[id]', () => {
       error: new Error('storage error'),
     });
 
-    const res = await GET(createRequest(), createParams('test-id'));
+    const res = await GET(createRequest(), createParams('aBcDeFgH01'));
     expect(res.status).toBe(500);
   });
 });
