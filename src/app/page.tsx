@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { Copy, Check, File as FileIcon, Loader2, X } from 'lucide-react';
+import Link from 'next/link';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
 import { formatFileSize } from '@/lib/utils';
@@ -151,7 +152,7 @@ export default function Home() {
           PHNTM<span className="cursor-blink">_</span>
         </div>
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
-          <span className="hidden sm:inline">[ ENCRYPTION ]</span>
+          <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
         </div>
       </header>
 

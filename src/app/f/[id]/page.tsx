@@ -162,11 +162,14 @@ export default function DownloadPage({
         <Link href="/" className="text-sm tracking-[0.2em] font-bold hover:text-accent">
           PHNTM<span className="cursor-blink">_</span>
         </Link>
-        {fileData && !['expired', 'not-found', 'no-key', 'error'].includes(state) && (
-          <div className="text-[11px] text-accent tracking-[0.15em] font-mono">
-            EXPIRY_T-MINUS: {countdown}
-          </div>
-        )}
+        <div className="flex gap-6 items-center text-[11px] text-muted tracking-[0.15em]">
+          {fileData && !['expired', 'not-found', 'no-key', 'error'].includes(state) && (
+            <span className="text-accent font-mono">
+              EXPIRY_T-MINUS: {countdown}
+            </span>
+          )}
+          <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
+        </div>
       </header>
 
       {/* Center */}
