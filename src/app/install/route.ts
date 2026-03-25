@@ -56,6 +56,26 @@ info "DOWNLOADING: $URL"
 TMP_DIR=$(mktemp -d)
 curl -sL "$URL" -o "$TMP_DIR/$TARBALL" || error "Download failed"
 
+# Verify checksum if available
+CHECKSUM_URL="https://github.com/$REPO/releases/download/$LATEST/checksums.txt"
+if curl -sL --fail "$CHECKSUM_URL" -o "$TMP_DIR/checksums.txt" 2>/dev/null; then
+  info "VERIFYING_CHECKSUM..."
+  EXPECTED=$(grep "$TARBALL" "$TMP_DIR/checksums.txt" | awk '{print $1}')
+  if [ -n "$EXPECTED" ]; then
+    if command -v sha256sum >/dev/null 2>&1; then
+      ACTUAL=$(sha256sum "$TMP_DIR/$TARBALL" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+      ACTUAL=$(shasum -a 256 "$TMP_DIR/$TARBALL" | awk '{print $1}')
+    fi
+    if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$EXPECTED" ]; then
+      error "Checksum mismatch — download may be corrupted"
+    fi
+    info "CHECKSUM_VERIFIED"
+  fi
+else
+  info "SKIPPING_CHECKSUM (no checksums.txt in release)"
+fi
+
 # Extract
 info "EXTRACTING..."
 tar -xzf "$TMP_DIR/$TARBALL" -C "$TMP_DIR" || error "Extraction failed"

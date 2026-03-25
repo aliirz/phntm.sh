@@ -7,15 +7,26 @@ const VALID_EXPIRY_HOURS = [1, 6, 24];
 
 function generateId(length = 10): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const limit = 256 - (256 % chars.length); // rejection threshold to avoid modulo bias
   let result = '';
-  const values = crypto.getRandomValues(new Uint8Array(length));
-  for (const val of values) {
-    result += chars[val % chars.length];
+  while (result.length < length) {
+    const values = crypto.getRandomValues(new Uint8Array(length - result.length));
+    for (const val of values) {
+      if (val < limit && result.length < length) {
+        result += chars[val % chars.length];
+      }
+    }
   }
   return result;
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+  if (!origin || !host || !origin.endsWith(host.replace(/:\d+$/, ''))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { file_name, file_size, expiry_hours } = body;

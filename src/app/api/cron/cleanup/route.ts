@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized calls
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+
+  const authHeader = request.headers.get('authorization') ?? '';
+  const token = authHeader.replace('Bearer ', '');
+  const a = Buffer.from(token);
+  const b = Buffer.from(cronSecret);
+  if (a.byteLength !== b.byteLength || !timingSafeEqual(a, b)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

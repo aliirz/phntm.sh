@@ -8,6 +8,10 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  if (!/^[a-zA-Z0-9]{10}$/.test(id)) {
+    return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
+  }
+
   // Check file exists and isn't expired
   const { data: fileMeta, error: metaError } = await supabaseAdmin
     .from('files')
@@ -49,6 +53,7 @@ export async function GET(
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Length': buffer.length.toString(),
+      'Content-Disposition': 'attachment',
     },
   });
 }

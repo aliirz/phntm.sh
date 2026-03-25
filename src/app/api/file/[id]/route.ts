@@ -8,6 +8,10 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  if (!/^[a-zA-Z0-9]{10}$/.test(id)) {
+    return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
+  }
+
   const { data, error } = await supabaseAdmin
     .from('files')
     .select('id, file_name, file_size, expires_at, created_at')
