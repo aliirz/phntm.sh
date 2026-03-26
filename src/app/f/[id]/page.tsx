@@ -13,6 +13,7 @@ import {
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/encryption';
 import { formatFileSize } from '@/lib/utils';
+import { ScrambleText } from '@/components/ScrambleText';
 
 type FileMetadata = {
   id: string;
@@ -257,13 +258,17 @@ export default function DownloadPage({
                   <div className="flex flex-col items-center gap-1.5 py-3">
                     <div className="flex items-center gap-3">
                       <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      <span className="text-[11px] text-accent tracking-[0.15em]">
-                        DOWNLOADING_CIPHERTEXT...
-                      </span>
+                      <ScrambleText
+                        text="DOWNLOADING_CIPHERTEXT..."
+                        className="text-[11px] text-accent tracking-[0.15em]"
+                        scrambleDuration={800}
+                      />
                     </div>
-                    <span className="text-[10px] text-muted tracking-[0.1em]">
-                      ENCRYPTED PAYLOAD // AWAITING DECRYPTION
-                    </span>
+                    <ScrambleText
+                      text="ENCRYPTED PAYLOAD // AWAITING DECRYPTION"
+                      className="text-[10px] text-muted tracking-[0.1em]"
+                      scrambleDuration={1000}
+                    />
                   </div>
                 )}
 
@@ -271,13 +276,17 @@ export default function DownloadPage({
                   <div className="flex flex-col items-center gap-1.5 py-3">
                     <div className="flex items-center gap-3">
                       <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      <span className="text-[11px] text-accent tracking-[0.15em]">
-                        DECRYPTING: AES-256-GCM...
-                      </span>
+                      <ScrambleText
+                        text="DECRYPTING: AES-256-GCM..."
+                        className="text-[11px] text-accent tracking-[0.15em]"
+                        scrambleDuration={800}
+                      />
                     </div>
-                    <span className="text-[10px] text-muted tracking-[0.1em]">
-                      256-BIT KEY // CLIENT-SIDE ONLY
-                    </span>
+                    <ScrambleText
+                      text="256-BIT KEY // CLIENT-SIDE ONLY"
+                      className="text-[10px] text-muted tracking-[0.1em]"
+                      scrambleDuration={1000}
+                    />
                   </div>
                 )}
 
@@ -285,13 +294,17 @@ export default function DownloadPage({
                   <div className="flex flex-col items-center gap-1.5 py-3">
                     <div className="flex items-center gap-3">
                       <Check className="w-4 h-4 text-accent" />
-                      <span className="text-[11px] text-accent tracking-[0.15em]">
-                        DECRYPTION_COMPLETE: FILE SAVED
-                      </span>
+                      <ScrambleText
+                        text="DECRYPTION_COMPLETE: FILE SAVED"
+                        className="text-[11px] text-accent tracking-[0.15em]"
+                        scrambleDuration={800}
+                      />
                     </div>
-                    <span className="text-[10px] text-muted tracking-[0.1em]">
-                      AES-256-GCM VERIFIED // INTEGRITY OK
-                    </span>
+                    <ScrambleText
+                      text="AES-256-GCM VERIFIED // INTEGRITY OK"
+                      className="text-[10px] text-muted tracking-[0.1em]"
+                      scrambleDuration={1000}
+                    />
                   </div>
                 )}
               </div>
@@ -321,17 +334,22 @@ export default function DownloadPage({
 
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
-        <p className="text-[11px] text-muted tracking-[0.1em]">
-          {state === 'loading' && 'RESOLVING_TRANSMISSION...'}
-          {state === 'ready' && 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD'}
-          {state === 'downloading' && 'DOWNLOADING_ENCRYPTED_PAYLOAD // AES-256-GCM CIPHERTEXT...'}
-          {state === 'decrypting' && 'DECRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...'}
-          {state === 'complete' && 'OPERATION_COMPLETE: AES-256-GCM DECRYPTED // FILE SAVED'}
-          {state === 'expired' && 'TRANSMISSION_EXPIRED: DATA PURGED'}
-          {state === 'not-found' && 'ERROR: TRANSMISSION NOT FOUND'}
-          {state === 'no-key' && 'ERROR: MISSING DECRYPTION KEY'}
-          {state === 'error' && `ERROR: ${error}`}
-        </p>
+        <ScrambleText
+          key={state}
+          text={
+            state === 'loading' ? 'RESOLVING_TRANSMISSION...' :
+            state === 'ready' ? 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD' :
+            state === 'downloading' ? 'DOWNLOADING_ENCRYPTED_PAYLOAD // AES-256-GCM CIPHERTEXT...' :
+            state === 'decrypting' ? 'DECRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...' :
+            state === 'complete' ? 'OPERATION_COMPLETE: AES-256-GCM DECRYPTED // FILE SAVED' :
+            state === 'expired' ? 'TRANSMISSION_EXPIRED: DATA PURGED' :
+            state === 'not-found' ? 'ERROR: TRANSMISSION NOT FOUND' :
+            state === 'no-key' ? 'ERROR: MISSING DECRYPTION KEY' :
+            state === 'error' ? `ERROR: ${error}` : ''
+          }
+          className="text-[11px] text-muted tracking-[0.1em]"
+          scrambleDuration={600}
+        />
         <AboutModal />
       </footer>
     </main>
