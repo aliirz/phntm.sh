@@ -23,7 +23,10 @@ function generateId(length = 10): string {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
   const host = request.headers.get('host');
-  if (!origin || !host || !origin.endsWith(host.replace(/:\d+$/, ''))) {
+  const clientType = request.headers.get('x-phntm-client');
+  const isBrowser = origin && host && origin.endsWith(host.replace(/:\d+$/, ''));
+  const isCLI = clientType === 'cli';
+  if (!isBrowser && !isCLI) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
