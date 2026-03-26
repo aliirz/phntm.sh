@@ -170,6 +170,13 @@ export default function Home() {
 
         {state !== 'done' ? (
           <div className="flex flex-col items-center gap-8">
+            {/* Tagline */}
+            <p className="text-[11px] text-muted tracking-[0.15em] text-center max-w-xs leading-relaxed">
+              DROP A FILE. GET A LINK. IT SELF-DESTRUCTS.
+              <br />
+              WE CAN&apos;T READ IT EVEN IF WE TRIED.
+            </p>
+
             {/* The Event Horizon */}
             <div
               onDrop={handleDrop}
