@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Copy, Check, File as FileIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
+import { ScrambleText } from '@/components/ScrambleText';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
 import { formatFileSize } from '@/lib/utils';
@@ -171,11 +172,14 @@ export default function Home() {
         {state !== 'done' ? (
           <div className="flex flex-col items-center gap-8">
             {/* Tagline */}
-            <p className="text-[11px] text-muted tracking-[0.15em] text-center max-w-xs leading-relaxed">
-              DROP A FILE. GET A LINK. IT SELF-DESTRUCTS.
+            <div className="text-[11px] text-muted tracking-[0.15em] text-center max-w-xs leading-relaxed">
+              <ScrambleText text="DROP A FILE. GET A LINK. IT SELF-DESTRUCTS." />
               <br />
-              WE CAN&apos;T READ IT EVEN IF WE TRIED.
-            </p>
+              <ScrambleText
+                text="WE CAN'T READ IT EVEN IF WE TRIED."
+                scrambleDuration={1500}
+              />
+            </div>
 
             {/* The Event Horizon */}
             <div
