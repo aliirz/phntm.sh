@@ -7,6 +7,7 @@ import { ScrambleText } from '@/components/ScrambleText';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
 import { formatFileSize } from '@/lib/utils';
+import { ScrambleText } from '@/components/ScrambleText';
 
 type ExpiryOption = { label: string; tag: string; hours: number };
 
