@@ -138,8 +138,8 @@ export default function Home() {
 
   const statusText = (() => {
     if (error) return `ERROR: ${error}`;
-    if (state === 'encrypting') return 'ENCRYPTING: AES-256-GCM...';
-    if (state === 'uploading') return 'TRANSMITTING: UPLOADING CIPHERTEXT...';
+    if (state === 'encrypting') return 'ENCRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...';
+    if (state === 'uploading') return 'TRANSMITTING: UPLOADING CIPHERTEXT // E2E ENCRYPTED...';
     if (state === 'done') return 'TRANSMISSION_COMPLETE: LINK ACTIVE';
     if (file) return `FILE_LOADED: ${file.name.toUpperCase()} — READY TO TRANSMIT`;
     return 'SYSTEM_READY: WAITING FOR INPUT...';
@@ -235,11 +235,18 @@ export default function Home() {
 
               {/* Processing */}
               {isProcessing && (
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-4">
                   <Loader2 className="w-6 h-6 text-accent animate-spin" />
-                  <p className="text-[11px] text-accent tracking-[0.15em]">
-                    {state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
-                  </p>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <p className="text-[11px] text-accent tracking-[0.15em]">
+                      {state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
+                    </p>
+                    <p className="text-[10px] text-muted tracking-[0.1em]">
+                      {state === 'encrypting'
+                        ? 'AES-256-GCM // 256-BIT KEY'
+                        : 'UPLOADING CIPHERTEXT...'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
