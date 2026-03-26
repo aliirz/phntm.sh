@@ -66,6 +66,7 @@ export function ScrambleText({
     <span
       className={className}
       onMouseEnter={scramble}
+      onTouchStart={scramble}
       style={{ cursor: 'default' }}
     >
       {display}
