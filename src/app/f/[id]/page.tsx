@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   Loader2,
   Check,
+  Eye,
+  X,
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/encryption';
@@ -33,6 +35,27 @@ type PageState =
   | 'no-key'
   | 'error';
 
+const PREVIEWABLE_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+};
+
+function getMediaCategory(ext: string): 'image' | 'video' | 'audio' | null {
+  const lower = ext.toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lower)) return 'image';
+  if (['mp4', 'webm'].includes(lower)) return 'video';
+  if (['mp3', 'wav', 'ogg'].includes(lower)) return 'audio';
+  return null;
+}
+
 export default function DownloadPage({
   params,
 }: {
@@ -44,6 +67,8 @@ export default function DownloadPage({
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState('--:--:--');
   const [progress, setProgress] = useState(100);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -124,7 +149,12 @@ export default function DownloadPage({
       const encryptedBuffer = await blob.arrayBuffer();
       const decryptedBuffer = await decryptFile(encryptedBuffer, key);
 
-      const decryptedBlob = new Blob([decryptedBuffer]);
+      const ext = fileData.file_name.split('.').pop()?.toLowerCase() || '';
+      const mimeType = PREVIEWABLE_TYPES[ext];
+      const decryptedBlob = mimeType
+        ? new Blob([decryptedBuffer], { type: mimeType })
+        : new Blob([decryptedBuffer]);
+
       const url = URL.createObjectURL(decryptedBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -132,7 +162,13 @@ export default function DownloadPage({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+
+      // Keep the URL alive for preview if the file type is previewable
+      if (mimeType) {
+        setPreviewUrl(url);
+      } else {
+        URL.revokeObjectURL(url);
+      }
 
       setState('complete');
     } catch (err) {
@@ -173,7 +209,7 @@ export default function DownloadPage({
       </header>
 
       {/* Center */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 overflow-y-auto">
         {/* Loading */}
         {state === 'loading' && (
           <div className="flex flex-col items-center gap-4">
@@ -272,14 +308,70 @@ export default function DownloadPage({
                 )}
 
                 {state === 'complete' && (
-                  <div className="flex items-center justify-center gap-3 py-3">
-                    <Check className="w-4 h-4 text-accent" />
-                    <span className="text-[11px] text-accent tracking-[0.15em]">
-                      DECRYPTION_COMPLETE: FILE SAVED
-                    </span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center gap-3 py-3">
+                      <Check className="w-4 h-4 text-accent" />
+                      <span className="text-[11px] text-accent tracking-[0.15em]">
+                        DECRYPTION_COMPLETE: FILE SAVED
+                      </span>
+                    </div>
+
+                    {previewUrl && (
+                      <button
+                        onClick={() => setShowPreview(!showPreview)}
+                        className="ghost-btn-accent w-full py-3 text-[11px] tracking-[0.2em] border flex items-center justify-center gap-2"
+                      >
+                        {showPreview ? (
+                          <>
+                            <X className="w-4 h-4" />
+                            [ CLOSE PREVIEW ]
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            [ PREVIEW ]
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Inline media preview */}
+              {showPreview && previewUrl && fileData && (() => {
+                const ext = fileData.file_name.split('.').pop()?.toLowerCase() || '';
+                const category = getMediaCategory(ext);
+                return (
+                  <div className="border border-border p-4 space-y-3">
+                    <p className="text-[10px] text-muted tracking-[0.15em] text-center">
+                      PREVIEW: {fileData.file_name.toUpperCase()}
+                    </p>
+                    {category === 'image' && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previewUrl}
+                        alt={fileData.file_name}
+                        className="w-full rounded border border-border"
+                      />
+                    )}
+                    {category === 'video' && (
+                      <video
+                        src={previewUrl}
+                        controls
+                        className="w-full rounded border border-border"
+                      />
+                    )}
+                    {category === 'audio' && (
+                      <audio
+                        src={previewUrl}
+                        controls
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Destruction warning */}
               <p className="text-[10px] text-muted tracking-[0.1em] text-center leading-relaxed">
@@ -311,7 +403,8 @@ export default function DownloadPage({
           {state === 'ready' && 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD'}
           {state === 'downloading' && 'DOWNLOADING_ENCRYPTED_PAYLOAD...'}
           {state === 'decrypting' && 'DECRYPTING_PAYLOAD...'}
-          {state === 'complete' && 'OPERATION_COMPLETE: FILE DECRYPTED AND SAVED'}
+          {state === 'complete' && !showPreview && 'OPERATION_COMPLETE: FILE DECRYPTED AND SAVED'}
+          {state === 'complete' && showPreview && 'PREVIEW_MODE: RENDERING DECRYPTED MEDIA'}
           {state === 'expired' && 'TRANSMISSION_EXPIRED: DATA PURGED'}
           {state === 'not-found' && 'ERROR: TRANSMISSION NOT FOUND'}
           {state === 'no-key' && 'ERROR: MISSING DECRYPTION KEY'}
