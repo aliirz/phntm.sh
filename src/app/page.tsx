@@ -258,6 +258,14 @@ export default function Home() {
               )}
             </div>
 
+            {/* Mobile status line — visible only on small screens */}
+            <ScrambleText
+              key={`mobile-${statusText}`}
+              text={statusText}
+              className={`md:hidden text-[10px] tracking-[0.1em] text-center ${error ? 'text-danger' : 'text-muted'}`}
+              scrambleDuration={600}
+            />
+
             {/* Expiry picker + Upload — shown when file selected */}
             {file && !isProcessing && (
               <div className="flex flex-col items-center gap-5">
@@ -364,7 +372,7 @@ export default function Home() {
         <ScrambleText
           key={statusText}
           text={statusText}
-          className={`text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}
+          className={`hidden md:inline text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}
           scrambleDuration={600}
         />
         <AboutModal />
