@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import { EasterEggs } from "@/components/EasterEggs";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
+import { SafeAnalytics } from "@/components/SafeAnalytics";
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -29,13 +29,7 @@ export default function RootLayout({
       <body className={`${geistMono.variable} antialiased`}>
         <EasterEggs />
         {children}
-        <Analytics
-          beforeSend={(event) => {
-            const url = new URL(event.url);
-            url.hash = '';
-            return { ...event, url: url.toString() };
-          }}
-        />
+        <SafeAnalytics />
       </body>
     </html>
   );
