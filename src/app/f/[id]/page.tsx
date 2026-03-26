@@ -46,6 +46,17 @@ export default function DownloadPage({
   const [countdown, setCountdown] = useState('--:--:--');
   const [progress, setProgress] = useState(100);
 
+  const statusText =
+    state === 'loading' ? 'RESOLVING_TRANSMISSION...' :
+    state === 'ready' ? 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD' :
+    state === 'downloading' ? 'DOWNLOADING_ENCRYPTED_PAYLOAD // AES-256-GCM CIPHERTEXT...' :
+    state === 'decrypting' ? 'DECRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...' :
+    state === 'complete' ? 'OPERATION_COMPLETE: AES-256-GCM DECRYPTED // FILE SAVED' :
+    state === 'expired' ? 'TRANSMISSION_EXPIRED: DATA PURGED' :
+    state === 'not-found' ? 'ERROR: TRANSMISSION NOT FOUND' :
+    state === 'no-key' ? 'ERROR: MISSING DECRYPTION KEY' :
+    state === 'error' ? `ERROR: ${error}` : '';
+
   useEffect(() => {
     const hash = window.location.hash.slice(1);
     if (!hash) {
@@ -330,24 +341,22 @@ export default function DownloadPage({
             </p>
           </div>
         )}
+
+        {/* Mobile status line */}
+        <ScrambleText
+          key={`mobile-${state}`}
+          text={statusText}
+          className="md:hidden text-[10px] tracking-[0.1em] text-muted text-center mt-6"
+          scrambleDuration={600}
+        />
       </div>
 
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
         <ScrambleText
           key={state}
-          text={
-            state === 'loading' ? 'RESOLVING_TRANSMISSION...' :
-            state === 'ready' ? 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD' :
-            state === 'downloading' ? 'DOWNLOADING_ENCRYPTED_PAYLOAD // AES-256-GCM CIPHERTEXT...' :
-            state === 'decrypting' ? 'DECRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...' :
-            state === 'complete' ? 'OPERATION_COMPLETE: AES-256-GCM DECRYPTED // FILE SAVED' :
-            state === 'expired' ? 'TRANSMISSION_EXPIRED: DATA PURGED' :
-            state === 'not-found' ? 'ERROR: TRANSMISSION NOT FOUND' :
-            state === 'no-key' ? 'ERROR: MISSING DECRYPTION KEY' :
-            state === 'error' ? `ERROR: ${error}` : ''
-          }
-          className="text-[11px] text-muted tracking-[0.1em]"
+          text={statusText}
+          className="hidden md:inline text-[11px] text-muted tracking-[0.1em]"
           scrambleDuration={600}
         />
         <AboutModal />
