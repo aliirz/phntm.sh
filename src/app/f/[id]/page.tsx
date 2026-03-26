@@ -254,28 +254,43 @@ export default function DownloadPage({
                 )}
 
                 {state === 'downloading' && (
-                  <div className="flex items-center justify-center gap-3 py-3">
-                    <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                    <span className="text-[11px] text-accent tracking-[0.15em]">
-                      DOWNLOADING_CIPHERTEXT...
+                  <div className="flex flex-col items-center gap-1.5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      <span className="text-[11px] text-accent tracking-[0.15em]">
+                        DOWNLOADING_CIPHERTEXT...
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted tracking-[0.1em]">
+                      ENCRYPTED PAYLOAD // AWAITING DECRYPTION
                     </span>
                   </div>
                 )}
 
                 {state === 'decrypting' && (
-                  <div className="flex items-center justify-center gap-3 py-3">
-                    <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                    <span className="text-[11px] text-accent tracking-[0.15em]">
-                      DECRYPTING: AES-256-GCM...
+                  <div className="flex flex-col items-center gap-1.5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                      <span className="text-[11px] text-accent tracking-[0.15em]">
+                        DECRYPTING: AES-256-GCM...
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted tracking-[0.1em]">
+                      256-BIT KEY // CLIENT-SIDE ONLY
                     </span>
                   </div>
                 )}
 
                 {state === 'complete' && (
-                  <div className="flex items-center justify-center gap-3 py-3">
-                    <Check className="w-4 h-4 text-accent" />
-                    <span className="text-[11px] text-accent tracking-[0.15em]">
-                      DECRYPTION_COMPLETE: FILE SAVED
+                  <div className="flex flex-col items-center gap-1.5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Check className="w-4 h-4 text-accent" />
+                      <span className="text-[11px] text-accent tracking-[0.15em]">
+                        DECRYPTION_COMPLETE: FILE SAVED
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted tracking-[0.1em]">
+                      AES-256-GCM VERIFIED // INTEGRITY OK
                     </span>
                   </div>
                 )}
@@ -309,9 +324,9 @@ export default function DownloadPage({
         <p className="text-[11px] text-muted tracking-[0.1em]">
           {state === 'loading' && 'RESOLVING_TRANSMISSION...'}
           {state === 'ready' && 'TRANSMISSION_LOCATED: READY FOR DOWNLOAD'}
-          {state === 'downloading' && 'DOWNLOADING_ENCRYPTED_PAYLOAD...'}
-          {state === 'decrypting' && 'DECRYPTING_PAYLOAD...'}
-          {state === 'complete' && 'OPERATION_COMPLETE: FILE DECRYPTED AND SAVED'}
+          {state === 'downloading' && 'DOWNLOADING_ENCRYPTED_PAYLOAD // AES-256-GCM CIPHERTEXT...'}
+          {state === 'decrypting' && 'DECRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...'}
+          {state === 'complete' && 'OPERATION_COMPLETE: AES-256-GCM DECRYPTED // FILE SAVED'}
           {state === 'expired' && 'TRANSMISSION_EXPIRED: DATA PURGED'}
           {state === 'not-found' && 'ERROR: TRANSMISSION NOT FOUND'}
           {state === 'no-key' && 'ERROR: MISSING DECRYPTION KEY'}
