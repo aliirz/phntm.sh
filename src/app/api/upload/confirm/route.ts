@@ -8,7 +8,8 @@ export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
   const host = request.headers.get('host');
   const clientType = request.headers.get('x-phntm-client');
-  const isBrowser = origin && host && origin.endsWith(host.replace(/:\d+$/, ''));
+  const hostName = host?.replace(/:\d+$/, '');
+  const isBrowser = origin && hostName && new URL(origin).hostname === hostName;
   const isCLI = clientType === 'cli';
   if (!isBrowser && !isCLI) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
