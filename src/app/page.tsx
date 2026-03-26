@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
 import { formatFileSize } from '@/lib/utils';
+import { ScrambleText } from '@/components/ScrambleText';
 
 type ExpiryOption = { label: string; tag: string; hours: number };
 
@@ -227,14 +228,20 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="w-6 h-6 text-accent animate-spin" />
                   <div className="flex flex-col items-center gap-1.5">
-                    <p className="text-[11px] text-accent tracking-[0.15em]">
-                      {state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
-                    </p>
-                    <p className="text-[10px] text-muted tracking-[0.1em]">
-                      {state === 'encrypting'
+                    <ScrambleText
+                      key={state}
+                      text={state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
+                      className="text-[11px] text-accent tracking-[0.15em]"
+                      scrambleDuration={800}
+                    />
+                    <ScrambleText
+                      key={`${state}-sub`}
+                      text={state === 'encrypting'
                         ? 'AES-256-GCM // 256-BIT KEY'
                         : 'UPLOADING CIPHERTEXT...'}
-                    </p>
+                      className="text-[10px] text-muted tracking-[0.1em]"
+                      scrambleDuration={1000}
+                    />
                   </div>
                 </div>
               )}
@@ -343,9 +350,12 @@ export default function Home() {
 
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
-        <p className={`text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}>
-          {statusText}
-        </p>
+        <ScrambleText
+          key={statusText}
+          text={statusText}
+          className={`text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}
+          scrambleDuration={600}
+        />
         <AboutModal />
       </footer>
     </main>
