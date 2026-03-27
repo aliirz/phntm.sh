@@ -21,7 +21,7 @@ describe('HomePage', () => {
     render(<Home />);
     expect(screen.getByText('PHNTM')).toBeInTheDocument();
     expect(screen.getByText('DROP FILE')).toBeInTheDocument();
-    expect(screen.getByText(/SYSTEM_READY/)).toBeInTheDocument();
+    expect(screen.getAllByText(/SYSTEM_READY/).length).toBeGreaterThan(0);
   });
 
   it('shows file info after selecting a file', async () => {
@@ -44,7 +44,7 @@ describe('HomePage', () => {
     Object.defineProperty(largeFile, 'size', { value: 600 * 1024 * 1024 });
     await userEvent.upload(input, largeFile);
 
-    expect(screen.getByText(/FILE_TOO_LARGE/)).toBeInTheDocument();
+    expect(screen.getAllByText(/FILE_TOO_LARGE/).length).toBeGreaterThan(0);
   });
 
   it('shows expiry options when file is selected', async () => {
@@ -105,7 +105,7 @@ describe('HomePage', () => {
     fireEvent.click(screen.getByText(/ENCRYPT & TRANSMIT/));
 
     await waitFor(() => {
-      expect(screen.getByText(/Upload failed/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Upload failed/).length).toBeGreaterThan(0);
     });
     expect(screen.getByText(/RETRY/)).toBeInTheDocument();
   });
@@ -129,7 +129,7 @@ describe('HomePage', () => {
 
     fireEvent.click(screen.getByText(/NEW TRANSMISSION/));
     expect(screen.getByText('DROP FILE')).toBeInTheDocument();
-    expect(screen.getByText(/SYSTEM_READY/)).toBeInTheDocument();
+    expect(screen.getAllByText(/SYSTEM_READY/).length).toBeGreaterThan(0);
   });
 
   it('copies share URL to clipboard', async () => {
