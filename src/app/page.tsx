@@ -138,8 +138,8 @@ export default function Home() {
 
   const statusText = (() => {
     if (error) return `ERROR: ${error}`;
-    if (state === 'encrypting') return 'ENCRYPTING: AES-256-GCM...';
-    if (state === 'uploading') return 'TRANSMITTING: UPLOADING CIPHERTEXT...';
+    if (state === 'encrypting') return 'ENCRYPTING: AES-256-GCM // 256-BIT KEY // CLIENT-SIDE...';
+    if (state === 'uploading') return 'TRANSMITTING: UPLOADING CIPHERTEXT // E2E ENCRYPTED...';
     if (state === 'done') return 'TRANSMISSION_COMPLETE: LINK ACTIVE';
     if (file) return `FILE_LOADED: ${file.name.toUpperCase()} — READY TO TRANSMIT`;
     return 'SYSTEM_READY: WAITING FOR INPUT...';
@@ -235,14 +235,35 @@ export default function Home() {
 
               {/* Processing */}
               {isProcessing && (
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-4">
                   <Loader2 className="w-6 h-6 text-accent animate-spin" />
-                  <p className="text-[11px] text-accent tracking-[0.15em]">
-                    {state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
-                  </p>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <ScrambleText
+                      key={state}
+                      text={state === 'encrypting' ? 'ENCRYPTING' : 'TRANSMITTING'}
+                      className="text-[11px] text-accent tracking-[0.15em]"
+                      scrambleDuration={800}
+                    />
+                    <ScrambleText
+                      key={`${state}-sub`}
+                      text={state === 'encrypting'
+                        ? 'AES-256-GCM // 256-BIT KEY'
+                        : 'UPLOADING CIPHERTEXT...'}
+                      className="text-[10px] text-muted tracking-[0.1em]"
+                      scrambleDuration={1000}
+                    />
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Mobile status line — visible only on small screens */}
+            <ScrambleText
+              key={`mobile-${statusText}`}
+              text={statusText}
+              className={`md:hidden text-[10px] tracking-[0.1em] text-center ${error ? 'text-danger' : 'text-muted'}`}
+              scrambleDuration={600}
+            />
 
             {/* Expiry picker + Upload — shown when file selected */}
             {file && !isProcessing && (
@@ -347,9 +368,12 @@ export default function Home() {
 
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
-        <p className={`text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}>
-          {statusText}
-        </p>
+        <ScrambleText
+          key={statusText}
+          text={statusText}
+          className={`hidden md:inline text-[11px] tracking-[0.1em] ${error ? 'text-danger' : 'text-muted'}`}
+          scrambleDuration={600}
+        />
         <AboutModal />
       </footer>
     </main>
