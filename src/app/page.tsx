@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Copy, Check, File as FileIcon, Loader2, X } from 'lucide-react';
+import { Copy, Check, File as FileIcon, Loader2, X, Shield, Clock, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { ScrambleText } from '@/components/ScrambleText';
 import { AboutModal } from '@/components/AboutModal';
@@ -146,19 +146,31 @@ export default function Home() {
   })();
 
   return (
-    <main className="h-screen overflow-hidden flex flex-col bg-bg">
+    <main className="min-h-screen flex flex-col bg-bg">
       {/* Header */}
       <header className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
-        <div className="text-sm tracking-[0.2em] font-bold">
+        <Link href="/" className="text-sm tracking-[0.2em] font-bold hover:text-accent">
           PHNTM<span className="cursor-blink">_</span>
-        </div>
+        </Link>
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
           <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
+          <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="hover:text-accent">[ SOURCE ]</a>
         </div>
       </header>
 
-      {/* Center — Event Horizon / Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      {/* Hero Section */}
+      <section className="flex-shrink-0 px-6 pt-12 pb-8 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-[0.1em] mb-4">
+          SEND FILES THAT DISAPPEAR
+        </h1>
+        <p className="text-[13px] text-muted tracking-[0.05em] leading-relaxed max-w-md mx-auto">
+          No account. No trace. No surveillance.<br />
+          Your files are encrypted before they leave your device.
+        </p>
+      </section>
+
+      {/* Upload Section */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
         <input
           ref={fileInputRef}
           type="file"
@@ -170,17 +182,7 @@ export default function Home() {
         />
 
         {state !== 'done' ? (
-          <div className="flex flex-col items-center gap-8">
-            {/* Tagline */}
-            <div className="text-[11px] text-muted tracking-[0.15em] text-center max-w-xs leading-relaxed">
-              <ScrambleText text="DROP A FILE. GET A LINK. IT SELF-DESTRUCTS." />
-              <br />
-              <ScrambleText
-                text="WE CAN'T READ IT EVEN IF WE TRIED."
-                scrambleDuration={1500}
-              />
-            </div>
-
+          <div className="flex flex-col items-center gap-6 w-full max-w-lg">
             {/* The Event Horizon */}
             <div
               onDrop={handleDrop}
@@ -191,7 +193,7 @@ export default function Home() {
               onDragLeave={() => setDragOver(false)}
               onClick={() => !isProcessing && fileInputRef.current?.click()}
               className={`
-                w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2
+                w-56 h-56 sm:w-64 sm:h-64 rounded-full border-2
                 flex flex-col items-center justify-center
                 transition-all duration-100
                 ${isProcessing ? 'pointer-events-none' : 'cursor-pointer'}
@@ -257,20 +259,12 @@ export default function Home() {
               )}
             </div>
 
-            {/* Mobile status line — visible only on small screens */}
-            <ScrambleText
-              key={`mobile-${statusText}`}
-              text={statusText}
-              className={`md:hidden text-[10px] tracking-[0.1em] text-center ${error ? 'text-danger' : 'text-muted'}`}
-              scrambleDuration={600}
-            />
-
             {/* Expiry picker + Upload — shown when file selected */}
             {file && !isProcessing && (
               <div className="flex flex-col items-center gap-5">
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] text-muted tracking-[0.15em]">
-                    SET_EXPIRY:
+                    SELF-DESTRUCT IN:
                   </span>
                   {EXPIRY_OPTIONS.map((option) => (
                     <button
@@ -294,7 +288,7 @@ export default function Home() {
                   onClick={handleUpload}
                   className="ghost-btn-accent px-8 py-3 text-[11px] tracking-[0.2em] border"
                 >
-                  [ ENCRYPT & TRANSMIT ]
+                  [ ENCRYPT & SHARE ]
                 </button>
               </div>
             )}
@@ -314,18 +308,18 @@ export default function Home() {
           </div>
         ) : (
           /* Done — Transmission Complete */
-          <div className="flex flex-col items-center gap-8 w-full max-w-lg">
+          <div className="flex flex-col items-center gap-6 w-full max-w-lg">
             {/* Success indicator */}
-            <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-accent flex items-center justify-center"
+            <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full border-2 border-accent flex items-center justify-center"
               style={{ boxShadow: '0 0 60px rgba(0, 255, 209, 0.12)' }}
             >
               <Check className="w-8 h-8 text-accent" />
             </div>
 
             {/* Share link */}
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-3">
               <div className="text-[11px] text-muted tracking-[0.15em]">
-                LINK:
+                SHARE LINK:
               </div>
               <div className="flex gap-2">
                 <input
@@ -352,7 +346,7 @@ export default function Home() {
                 </button>
               </div>
               <div className="text-[11px] text-muted tracking-[0.1em]">
-                DESTRUCTION_IN: {expiry.label.toUpperCase().replace(' ', '_')} — AES-256-GCM ENCRYPTED
+                SELF-DESTRUCTS IN {expiry.label.toUpperCase()} • ENCRYPTED
               </div>
             </div>
 
@@ -360,11 +354,67 @@ export default function Home() {
               onClick={reset}
               className="text-[11px] text-muted tracking-[0.15em] hover:text-fg border-b border-transparent hover:border-fg py-1"
             >
-              [ NEW TRANSMISSION ]
+              [ SHARE ANOTHER ]
             </button>
           </div>
         )}
       </div>
+
+      {/* Why Section */}
+      <section className="flex-shrink-0 px-6 py-10 border-t border-border">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-[11px] text-muted tracking-[0.2em] mb-6 text-center">
+            WHY PHNTM
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="flex justify-center mb-3">
+                <Shield className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-[12px] tracking-[0.1em] mb-1">ENCRYPTED</h3>
+              <p className="text-[11px] text-muted leading-relaxed">
+                AES-256-GCM encryption happens in your browser. The key stays with you.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="flex justify-center mb-3">
+                <Clock className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-[12px] tracking-[0.1em] mb-1">SELF-DESTRUCTING</h3>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Files automatically delete after 1, 6, or 24 hours. No permanent traces.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="flex justify-center mb-3">
+                <EyeOff className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-[12px] tracking-[0.1em] mb-1">ZERO-KNOWLEDGE</h3>
+              <p className="text-[11px] text-muted leading-relaxed">
+                We can&apos;t read your files even if we wanted to. The math makes it impossible.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="flex-shrink-0 px-6 py-10 bg-[#0a0a0a]">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-[11px] text-muted tracking-[0.2em] mb-6">
+            BUILT FOR
+          </h2>
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-[12px] tracking-[0.1em]">
+            <span>Journalists</span>
+            <span className="text-muted">•</span>
+            <span>Lawyers</span>
+            <span className="text-muted">•</span>
+            <span>Developers</span>
+            <span className="text-muted">•</span>
+            <span>Anyone sharing sensitive files</span>
+          </div>
+        </div>
+      </section>
 
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
