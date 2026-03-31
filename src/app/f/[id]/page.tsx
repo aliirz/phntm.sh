@@ -201,11 +201,18 @@ export default function DownloadPage({
           <div className="border border-border p-8 max-w-md text-center space-y-4">
             <AlertTriangle className="w-6 h-6 text-danger mx-auto" />
             <p className="text-xs tracking-[0.1em]">
-              MISSING_DECRYPTION_KEY
+              LINK_INCOMPLETE
             </p>
-            <p className="text-[11px] text-muted tracking-[0.05em]">
-              THIS LINK IS INCOMPLETE. THE ENCRYPTION KEY SHOULD BE
-              INCLUDED IN THE URL FRAGMENT. CONTACT THE SENDER.
+            <p className="text-[11px] text-muted tracking-[0.05em] leading-relaxed">
+              The decryption key is missing from this link. This usually happens when
+              Slack, Teams, or some email clients modify shared links.
+            </p>
+            <p className="text-[11px] text-muted tracking-[0.05em] leading-relaxed">
+              Ask the sender to copy the full link from phntm.sh and send it again —
+              ideally as plain text, not in a message that auto-previews links.
+            </p>
+            <p className="text-[10px] text-muted tracking-[0.1em] mt-4">
+              FILE_ID: {id.toUpperCase()}
             </p>
           </div>
         )}

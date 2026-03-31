@@ -348,6 +348,9 @@ export default function Home() {
               <div className="text-[11px] text-muted tracking-[0.1em]">
                 SELF-DESTRUCTS IN {expiry.label.toUpperCase()} • ENCRYPTED
               </div>
+              <div className="text-[10px] text-muted tracking-[0.08em] leading-relaxed">
+                ⚠ SOME APPS STRIP THE KEY — SEND AS PLAIN TEXT
+              </div>
             </div>
 
             <button

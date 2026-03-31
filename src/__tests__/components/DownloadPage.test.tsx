@@ -60,7 +60,7 @@ describe('DownloadPage', () => {
     await renderDownloadPage('');
 
     await waitFor(() => {
-      expect(screen.getByText('MISSING_DECRYPTION_KEY')).toBeInTheDocument();
+      expect(screen.getByText('LINK_INCOMPLETE')).toBeInTheDocument();
     });
   });
 

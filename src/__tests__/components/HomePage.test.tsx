@@ -32,7 +32,7 @@ describe('HomePage', () => {
     await userEvent.upload(input, file);
 
     expect(screen.getByText('test.txt')).toBeInTheDocument();
-    expect(screen.getByText(/ENCRYPT & TRANSMIT/)).toBeInTheDocument();
+    expect(screen.getByText(/ENCRYPT & SHARE/)).toBeInTheDocument();
   });
 
   it('rejects files over 512MB', async () => {
@@ -79,7 +79,7 @@ describe('HomePage', () => {
     const file = new File(['hello'], 'test.txt');
     await userEvent.upload(input, file);
 
-    fireEvent.click(screen.getByText(/ENCRYPT & TRANSMIT/));
+    fireEvent.click(screen.getByText(/ENCRYPT & SHARE/));
 
     await waitFor(() => {
       expect(screen.getByText(/TRANSMISSION_COMPLETE/)).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('HomePage', () => {
     const file = new File(['hello'], 'test.txt');
     await userEvent.upload(input, file);
 
-    fireEvent.click(screen.getByText(/ENCRYPT & TRANSMIT/));
+    fireEvent.click(screen.getByText(/ENCRYPT & SHARE/));
 
     await waitFor(() => {
       expect(screen.getAllByText(/Upload failed/).length).toBeGreaterThan(0);
@@ -121,13 +121,13 @@ describe('HomePage', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['hello'], 'test.txt');
     await userEvent.upload(input, file);
-    fireEvent.click(screen.getByText(/ENCRYPT & TRANSMIT/));
+    fireEvent.click(screen.getByText(/ENCRYPT & SHARE/));
 
     await waitFor(() => {
       expect(screen.getByText(/TRANSMISSION_COMPLETE/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText(/NEW TRANSMISSION/));
+    fireEvent.click(screen.getByText(/SHARE ANOTHER/));
     expect(screen.getByText('DROP FILE')).toBeInTheDocument();
     expect(screen.getAllByText(/SYSTEM_READY/).length).toBeGreaterThan(0);
   });
@@ -143,7 +143,7 @@ describe('HomePage', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['hello'], 'test.txt');
     await userEvent.upload(input, file);
-    fireEvent.click(screen.getByText(/ENCRYPT & TRANSMIT/));
+    fireEvent.click(screen.getByText(/ENCRYPT & SHARE/));
 
     await waitFor(() => {
       expect(screen.getByText('COPY')).toBeInTheDocument();
