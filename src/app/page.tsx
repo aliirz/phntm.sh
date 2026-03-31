@@ -5,7 +5,7 @@ import { Copy, Check, File as FileIcon, Loader2, X, Shield, Clock, EyeOff } from
 import Link from 'next/link';
 import { ScrambleText } from '@/components/ScrambleText';
 import { AboutModal } from '@/components/AboutModal';
-import { generateKey, exportKey, encryptFile } from '@/lib/encryption';
+import { generateKey, exportKey, encryptFileStream } from '@/lib/streaming-encryption';
 import { formatFileSize } from '@/lib/utils';
 
 type ExpiryOption = { label: string; tag: string; hours: number };
@@ -57,7 +57,7 @@ export default function Home() {
       setState('encrypting');
       const key = await generateKey();
       const keyString = await exportKey(key);
-      const encryptedBlob = await encryptFile(file, key);
+      const encryptedBlob = await encryptFileStream(file, key);
 
       setState('uploading');
 

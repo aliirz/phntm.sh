@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { Suspense } from 'react';
 
 // Mock encryption module
-vi.mock('@/lib/encryption', () => ({
+vi.mock('@/lib/streaming-encryption', () => ({
   importKey: vi.fn().mockResolvedValue('mock-imported-key'),
   decryptFile: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
 }));

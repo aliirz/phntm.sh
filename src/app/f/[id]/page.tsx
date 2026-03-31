@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
-import { importKey, decryptFile } from '@/lib/encryption';
+import { importKey, decryptFile } from '@/lib/streaming-encryption';
 import { formatFileSize } from '@/lib/utils';
 import { ScrambleText } from '@/components/ScrambleText';
 
