@@ -29,13 +29,15 @@ function deriveStreamNonce(
   chunkIndex: number,
   isLastChunk: boolean
 ): Uint8Array {
-  const nonce = new Uint8Array(NONCE_SIZE);
+  // Create a fresh ArrayBuffer (not SharedArrayBuffer)
+  const buffer = new ArrayBuffer(NONCE_SIZE);
+  const nonce = new Uint8Array(buffer);
   
   // Copy first 7 bytes from base nonce
   nonce.set(baseNonce.slice(0, 7), 0);
   
   // Counter in big-endian at bytes 7-10
-  const view = new DataView(nonce.buffer as ArrayBuffer, 7, 4);
+  const view = new DataView(buffer, 7, 4);
   view.setUint32(0, chunkIndex, false); // big-endian
   
   // Last block flag at byte 11
@@ -176,7 +178,7 @@ export async function encryptFileStream(
     
     // Encrypt chunk
     const ciphertext = await crypto.subtle.encrypt(
-      { name: ALGORITHM, iv: nonce },
+      { name: ALGORITHM, iv: nonce as Uint8Array<ArrayBuffer> },
       key,
       plaintext
     );
@@ -193,7 +195,7 @@ export async function encryptFileStream(
   const header = writeHeader(baseNonce, totalChunks, chunkSize);
   chunks.unshift(header);
   
-  return new Blob(chunks);
+  return new Blob(chunks as BlobPart[]);
 }
 
 /**
