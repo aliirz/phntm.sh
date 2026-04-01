@@ -216,20 +216,8 @@ export async function decryptFileStream(
   
   const { baseNonce, totalChunks, chunkSize } = header;
   
-  // Calculate expected size for verification
-  const headerSize = 28;
-  let expectedChunkSize = 0;
-  for (let i = 0; i < totalChunks; i++) {
-    const isLast = i === totalChunks - 1;
-    const plaintextSize = isLast
-      ? (chunkSize === 0 ? 0 : ((i * chunkSize + chunkSize) - (i * chunkSize)) - Math.max(0, (i + 1) * chunkSize - (totalChunks * chunkSize - (totalChunks * chunkSize - chunkSize))))
-      : chunkSize;
-    // Simpler: each chunk is [nonce (12)][ciphertext] where ciphertext = plaintext + tag (16)
-    // So chunk size = 12 + plaintextSize + 16
-    // We don't know plaintext sizes, so we parse sequentially
-  }
-  
   // Decrypt chunks sequentially
+  const headerSize = 28;
   let offset = headerSize;
   const decryptedChunks: Uint8Array[] = [];
   
