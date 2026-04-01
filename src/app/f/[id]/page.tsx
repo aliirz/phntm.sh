@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   Loader2,
   Check,
+  Shield,
+  X,
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/encryption';
@@ -45,6 +47,17 @@ export default function DownloadPage({
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState('--:--:--');
   const [progress, setProgress] = useState(100);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('phntm-banner-dismissed') === '1';
+    }
+    return false;
+  });
+
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    sessionStorage.setItem('phntm-banner-dismissed', '1');
+  };
 
   const statusText =
     state === 'loading' ? 'RESOLVING_TRANSMISSION...' :
@@ -157,6 +170,15 @@ export default function DownloadPage({
 
   const fileExt = fileData?.file_name.split('.').pop()?.toUpperCase() || 'FILE';
 
+  const expiryLabel = (() => {
+    if (!fileData) return '';
+    const remaining = new Date(fileData.expires_at).getTime() - Date.now();
+    if (remaining <= 0) return '';
+    const hours = Math.ceil(remaining / (1000 * 60 * 60));
+    if (hours <= 1) return 'less than an hour';
+    return `${hours} hours`;
+  })();
+
   return (
     <main className="h-screen overflow-hidden flex flex-col bg-bg">
       {/* Countdown progress bar — razor thin at top */}
@@ -247,6 +269,33 @@ export default function DownloadPage({
         {['ready', 'downloading', 'decrypting', 'complete'].includes(state) &&
           fileData && (
             <div className="w-full max-w-md space-y-6">
+              {/* Context banner for first-time recipients */}
+              {!bannerDismissed && state === 'ready' && (
+                <div className="border border-border/60 bg-[#0a0a0a] px-5 py-4 relative">
+                  <button
+                    onClick={dismissBanner}
+                    className="absolute top-3 right-3 text-muted hover:text-fg"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex gap-3 items-start pr-4">
+                    <Shield className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <div className="space-y-2">
+                      <p className="text-[12px] text-fg/90 leading-relaxed">
+                        Someone sent you a file via{' '}
+                        <Link href="/" className="text-accent hover:underline">phntm.sh</Link>
+                        {expiryLabel ? ` — it expires in ${expiryLabel}` : ''}.
+                      </p>
+                      <p className="text-[11px] text-muted leading-relaxed">
+                        This file is end-to-end encrypted. The decryption key is in
+                        your link and never reaches our servers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* File card */}
               <div className="border border-border p-6 space-y-4">
                 <div className="flex items-start gap-4">
