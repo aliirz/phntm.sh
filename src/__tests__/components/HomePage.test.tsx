@@ -3,10 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock encryption module (Web Crypto not available in jsdom)
-vi.mock('@/lib/encryption', () => ({
+vi.mock('@/lib/streaming-encryption', () => ({
   generateKey: vi.fn().mockResolvedValue('mock-key'),
   exportKey: vi.fn().mockResolvedValue('mock-key-string'),
-  encryptFile: vi.fn().mockResolvedValue(new Blob(['encrypted'])),
+  encryptFileStream: vi.fn().mockResolvedValue(new Blob(['encrypted'])),
 }));
 
 import Home from '@/app/page';
