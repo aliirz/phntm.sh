@@ -8,6 +8,16 @@ vi.mock('@/lib/streaming-encryption', () => ({
   decryptFile: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
 }));
 
+// Mock file-info module
+vi.mock('@/lib/file-info', () => ({
+  getFileInfo: vi.fn().mockReturnValue({
+    category: 'pdf',
+    icon: 'file-text',
+    description: 'PDF document',
+    isSuspicious: false,
+  }),
+}));
+
 // Mock next/link
 vi.mock('next/link', () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
@@ -100,7 +110,7 @@ describe('DownloadPage', () => {
     await renderDownloadPage();
 
     await waitFor(() => {
-      expect(screen.getByText('SECRET-DOCUMENT.PDF')).toBeInTheDocument();
+      expect(screen.getByText('secret-document.pdf')).toBeInTheDocument();
     });
     expect(screen.getByText(/2 KB/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /DOWNLOAD/ })).toBeInTheDocument();

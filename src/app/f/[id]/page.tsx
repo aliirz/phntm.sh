@@ -11,11 +11,19 @@ import {
   Check,
   Shield,
   X,
+  FileText,
+  FileSpreadsheet,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  Archive,
+  Code,
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/streaming-encryption';
 import { formatFileSize } from '@/lib/utils';
 import { ScrambleText } from '@/components/ScrambleText';
+import { getFileInfo } from '@/lib/file-info';
 
 type FileMetadata = {
   id: string;
@@ -35,6 +43,127 @@ type PageState =
   | 'not-found'
   | 'no-key'
   | 'error';
+
+function FileCard({
+  state,
+  fileData,
+  handleDownload,
+}: {
+  state: PageState;
+  fileData: FileMetadata;
+  handleDownload: () => void;
+}) {
+  const fileInfo = getFileInfo(fileData.file_name);
+  const IconComponent = fileInfo.icon === 'file-text' ? FileText :
+    fileInfo.icon === 'file-spreadsheet' ? FileSpreadsheet :
+    fileInfo.icon === 'file-image' ? FileImage :
+    fileInfo.icon === 'file-video' ? FileVideo :
+    fileInfo.icon === 'file-audio' ? FileAudio :
+    fileInfo.icon === 'archive' ? Archive :
+    fileInfo.icon === 'code' ? Code :
+    fileInfo.icon === 'alert-triangle' ? AlertTriangle :
+    FileIcon;
+
+  return (
+    <div className="w-full max-w-md space-y-6">
+      {/* Trust signal — file info prominently displayed */}
+      <div className="text-center space-y-2">
+        <p className="text-[11px] text-muted tracking-[0.15em]">
+          {fileInfo.description.toUpperCase()} • {formatFileSize(fileData.file_size)}
+        </p>
+      </div>
+
+      {/* File card */}
+      <div className={`border p-6 space-y-4 ${fileInfo.isSuspicious ? 'border-warning/30 bg-warning/5' : 'border-border'}`}>
+        <div className="flex items-start gap-4">
+          <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${fileInfo.isSuspicious ? 'text-warning' : 'text-accent'}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm truncate font-medium">
+              {fileData.file_name}
+            </p>
+            {fileInfo.isSuspicious && fileInfo.warning && (
+              <p className="text-[11px] text-warning tracking-[0.05em] mt-2 leading-relaxed">
+                ⚠ {fileInfo.warning}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Action */}
+        {state === 'ready' && (
+          <button
+            onClick={handleDownload}
+            className="ghost-btn-accent w-full py-3 text-[11px] tracking-[0.2em] border flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            [ DOWNLOAD ]
+          </button>
+        )}
+
+        {state === 'downloading' && (
+          <div className="flex flex-col items-center gap-1.5 py-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-4 h-4 text-accent animate-spin" />
+              <ScrambleText
+                text="DOWNLOADING_CIPHERTEXT..."
+                className="text-[11px] text-accent tracking-[0.15em]"
+                scrambleDuration={800}
+              />
+            </div>
+            <ScrambleText
+              text="ENCRYPTED PAYLOAD // AWAITING DECRYPTION"
+              className="text-[10px] text-muted tracking-[0.1em]"
+              scrambleDuration={1000}
+            />
+          </div>
+        )}
+
+        {state === 'decrypting' && (
+          <div className="flex flex-col items-center gap-1.5 py-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-4 h-4 text-accent animate-spin" />
+              <ScrambleText
+                text="DECRYPTING: AES-256-GCM..."
+                className="text-[11px] text-accent tracking-[0.15em]"
+                scrambleDuration={800}
+              />
+            </div>
+            <ScrambleText
+              text="256-BIT KEY // CLIENT-SIDE ONLY"
+              className="text-[10px] text-muted tracking-[0.1em]"
+              scrambleDuration={1000}
+            />
+          </div>
+        )}
+
+        {state === 'complete' && (
+          <div className="flex flex-col items-center gap-1.5 py-3">
+            <div className="flex items-center gap-3">
+              <Check className="w-4 h-4 text-accent" />
+              <ScrambleText
+                text="DECRYPTION_COMPLETE: FILE SAVED"
+                className="text-[11px] text-accent tracking-[0.15em]"
+                scrambleDuration={800}
+              />
+            </div>
+            <ScrambleText
+              text="AES-256-GCM VERIFIED // INTEGRITY OK"
+              className="text-[10px] text-muted tracking-[0.1em]"
+              scrambleDuration={1000}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Destruction warning */}
+      <p className="text-[10px] text-muted tracking-[0.1em] text-center leading-relaxed">
+        ATTENTION: DATA WILL BE PERMANENTLY PURGED UPON EXPIRY.
+        <br />
+        THIS FILE IS END-TO-END ENCRYPTED. DECRYPTION KEY NEVER TOUCHES OUR SERVERS.
+      </p>
+    </div>
+  );
+}
 
 export default function DownloadPage({
   params,
@@ -69,6 +198,15 @@ export default function DownloadPage({
     state === 'not-found' ? 'ERROR: TRANSMISSION NOT FOUND' :
     state === 'no-key' ? 'ERROR: MISSING DECRYPTION KEY' :
     state === 'error' ? `ERROR: ${error}` : '';
+
+  const expiryLabel = (() => {
+    if (!fileData) return '';
+    const remaining = new Date(fileData.expires_at).getTime() - Date.now();
+    if (remaining <= 0) return '';
+    const hours = Math.ceil(remaining / (1000 * 60 * 60));
+    if (hours <= 1) return 'less than an hour';
+    return `${hours} hours`;
+  })();
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -168,17 +306,6 @@ export default function DownloadPage({
     }
   };
 
-  const fileExt = fileData?.file_name.split('.').pop()?.toUpperCase() || 'FILE';
-
-  const expiryLabel = (() => {
-    if (!fileData) return '';
-    const remaining = new Date(fileData.expires_at).getTime() - Date.now();
-    if (remaining <= 0) return '';
-    const hours = Math.ceil(remaining / (1000 * 60 * 60));
-    if (hours <= 1) return 'less than an hour';
-    return `${hours} hours`;
-  })();
-
   return (
     <main className="h-screen overflow-hidden flex flex-col bg-bg">
       {/* Countdown progress bar — razor thin at top */}
@@ -266,11 +393,11 @@ export default function DownloadPage({
         )}
 
         {/* File card — ready / downloading / decrypting / complete */}
-        {['ready', 'downloading', 'decrypting', 'complete'].includes(state) &&
-          fileData && (
-            <div className="w-full max-w-md space-y-6">
-              {/* Context banner for first-time recipients */}
-              {!bannerDismissed && state === 'ready' && (
+        {['ready', 'downloading', 'decrypting', 'complete'].includes(state) && fileData && (
+          <>
+            {/* Context banner for first-time recipients */}
+            {!bannerDismissed && state === 'ready' && (
+              <div className="w-full max-w-md mb-4">
                 <div className="border border-border/60 bg-[#0a0a0a] px-5 py-4 relative">
                   <button
                     onClick={dismissBanner}
@@ -294,96 +421,15 @@ export default function DownloadPage({
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* File card */}
-              <div className="border border-border p-6 space-y-4">
-                <div className="flex items-start gap-4">
-                  <FileIcon className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm truncate">
-                      {fileData.file_name.toUpperCase()}
-                    </p>
-                    <p className="text-[11px] text-muted tracking-[0.1em] mt-1">
-                      SIZE: {formatFileSize(fileData.file_size)} | TYPE: {fileExt}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action */}
-                {state === 'ready' && (
-                  <button
-                    onClick={handleDownload}
-                    className="ghost-btn-accent w-full py-3 text-[11px] tracking-[0.2em] border flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    [ DOWNLOAD ]
-                  </button>
-                )}
-
-                {state === 'downloading' && (
-                  <div className="flex flex-col items-center gap-1.5 py-3">
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      <ScrambleText
-                        text="DOWNLOADING_CIPHERTEXT..."
-                        className="text-[11px] text-accent tracking-[0.15em]"
-                        scrambleDuration={800}
-                      />
-                    </div>
-                    <ScrambleText
-                      text="ENCRYPTED PAYLOAD // AWAITING DECRYPTION"
-                      className="text-[10px] text-muted tracking-[0.1em]"
-                      scrambleDuration={1000}
-                    />
-                  </div>
-                )}
-
-                {state === 'decrypting' && (
-                  <div className="flex flex-col items-center gap-1.5 py-3">
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      <ScrambleText
-                        text="DECRYPTING: AES-256-GCM..."
-                        className="text-[11px] text-accent tracking-[0.15em]"
-                        scrambleDuration={800}
-                      />
-                    </div>
-                    <ScrambleText
-                      text="256-BIT KEY // CLIENT-SIDE ONLY"
-                      className="text-[10px] text-muted tracking-[0.1em]"
-                      scrambleDuration={1000}
-                    />
-                  </div>
-                )}
-
-                {state === 'complete' && (
-                  <div className="flex flex-col items-center gap-1.5 py-3">
-                    <div className="flex items-center gap-3">
-                      <Check className="w-4 h-4 text-accent" />
-                      <ScrambleText
-                        text="DECRYPTION_COMPLETE: FILE SAVED"
-                        className="text-[11px] text-accent tracking-[0.15em]"
-                        scrambleDuration={800}
-                      />
-                    </div>
-                    <ScrambleText
-                      text="AES-256-GCM VERIFIED // INTEGRITY OK"
-                      className="text-[10px] text-muted tracking-[0.1em]"
-                      scrambleDuration={1000}
-                    />
-                  </div>
-                )}
               </div>
-
-              {/* Destruction warning */}
-              <p className="text-[10px] text-muted tracking-[0.1em] text-center leading-relaxed">
-                ATTENTION: DATA WILL BE PERMANENTLY PURGED UPON EXPIRY.
-                <br />
-                THIS FILE IS END-TO-END ENCRYPTED. DECRYPTION KEY NEVER TOUCHES OUR SERVERS.
-              </p>
-            </div>
-          )}
+            )}
+            <FileCard
+              state={state}
+              fileData={fileData}
+              handleDownload={handleDownload}
+            />
+          </>
+        )}
 
         {/* Error */}
         {state === 'error' && (
