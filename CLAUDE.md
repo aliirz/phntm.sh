@@ -13,9 +13,8 @@ npm run dev          # Start Next.js dev server on localhost:3000
 npm run build        # Production build (needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars)
 npm run lint         # ESLint (next/core-web-vitals + next/typescript)
 npx tsc --noEmit     # Type checking (CI runs this separately from build)
+npm test             # Vitest test suite (83 tests)
 ```
-
-No test runner is currently configured in package.json (the parent CLAUDE.md references Jest but those dependencies aren't installed here).
 
 ## Architecture
 
@@ -37,7 +36,9 @@ The encryption key lives only in the URL fragment (`#`), which browsers never se
 
 ### Key Files
 
-- `src/lib/encryption.ts` — AES-256-GCM encrypt/decrypt, key gen/export/import, base64url encoding
+- `src/lib/streaming-encryption.ts` — Streaming AES-256-GCM using Rogaway's STREAM construction. Handles large files in 64KB chunks. Wire format: PHNT magic header + chunked ciphertext with per-chunk nonces.
+- `src/lib/encryption.ts` — Legacy single-block AES-256-GCM (for backward compatibility)
+- `src/lib/file-info.ts` — File type categorization with contextual icons and suspicious file warnings
 - `src/lib/supabase-server.ts` — Server-side Supabase client using service role key
 - `src/lib/utils.ts` — `generateId`, `formatFileSize`, `formatTimeRemaining`
 - `src/app/globals.css` — Custom design system: dark theme with cyan accent (`--accent: #00FFD1`), film grain overlay, ghost buttons, "event horizon" circle animation

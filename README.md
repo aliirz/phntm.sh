@@ -44,7 +44,7 @@ Think of it as a dead drop — you leave the package, share the coordinates, and
 
 The decryption key lives in the URL fragment (`#key`). Browsers never send fragments to servers — not ours, not anyone's. The server is cryptographically blind.
 
-**Encryption:** AES-256-GCM with a unique 256-bit key per file, random IV, via the Web Crypto API.
+**Encryption:** AES-256-GCM with a unique 256-bit key per file. Large files use streaming encryption with Rogaway's STREAM construction for memory efficiency (64KB chunks). Random IV/nonce per file via Web Crypto API.
 
 **Expiry:** Files self-destruct after 1, 6, or 24 hours. Ciphertext, metadata, and file names are permanently purged. No backups. No traces.
 
@@ -72,7 +72,7 @@ You'll need a [Supabase](https://supabase.com) project (free tier works). Run `s
 | **Expired data** | Automatically and permanently purged — ciphertext, metadata, analytics. |
 | **Analytics** | Anonymous server-side event counts only. No PII. Auto-purged after 90 days. |
 
-The encryption implementation is a single file: [`src/lib/encryption.ts`](src/lib/encryption.ts). Read it. Audit it. That's the point.
+The encryption implementation lives in [`src/lib/streaming-encryption.ts`](src/lib/streaming-encryption.ts) (streaming) and [`src/lib/encryption.ts`](src/lib/encryption.ts) (legacy single-block). Read it. Audit it. That's the point.
 
 ## Stack
 
