@@ -35,7 +35,7 @@ function deriveStreamNonce(
   nonce.set(baseNonce.slice(0, 7), 0);
   
   // Counter in big-endian at bytes 7-10
-  const view = new DataView(nonce.buffer, 7, 4);
+  const view = new DataView(nonce.buffer as ArrayBuffer, 7, 4);
   view.setUint32(0, chunkIndex, false); // big-endian
   
   // Last block flag at byte 11
