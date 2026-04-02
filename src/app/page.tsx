@@ -154,6 +154,7 @@ export default function Home() {
         </Link>
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
           <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
+          <Link href="/releases" className="hover:text-accent">[ RELEASES ]</Link>
           <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="hover:text-accent">[ SOURCE ]</a>
         </div>
       </header>
