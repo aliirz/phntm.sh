@@ -8,6 +8,22 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: '0.2.1',
+    date: '2026-04-04',
+    title: 'Secure Notes',
+    changes: [
+      'New: `phntm note` command for encrypted text sharing',
+      'New: Terminal-style text input on web (FILE/TEXT toggle)',
+      'New: Inline note rendering on web (read notes directly)',
+      'New: Copy button for notes in web UI',
+      'CLI: Notes render inline in terminal with formatted box',
+      'CLI: Pipe support for notes (`phntm get url | pbcopy`)',
+      'Limit: 10KB max for text notes',
+    ],
+    cli: true,
+    web: true,
+  },
+  {
     version: '0.2.0',
     date: '2026-04-01',
     title: 'Streaming Encryption',
