@@ -18,6 +18,7 @@ import {
   FileAudio,
   Archive,
   Code,
+  Copy,
 } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
 import { importKey, decryptFile } from '@/lib/streaming-encryption';
@@ -47,13 +48,20 @@ type PageState =
 function FileCard({
   state,
   fileData,
+  noteText,
+  copied,
   handleDownload,
+  handleCopyNote,
 }: {
   state: PageState;
   fileData: FileMetadata;
+  noteText?: string | null;
+  copied?: boolean;
   handleDownload: () => void;
+  handleCopyNote?: () => void;
 }) {
   const fileInfo = getFileInfo(fileData.file_name);
+  const isNote = fileData.file_name.toLowerCase().endsWith('.txt');
   const IconComponent = fileInfo.icon === 'file-text' ? FileText :
     fileInfo.icon === 'file-spreadsheet' ? FileSpreadsheet :
     fileInfo.icon === 'file-image' ? FileImage :
@@ -69,7 +77,7 @@ function FileCard({
       {/* Trust signal — file info prominently displayed */}
       <div className="text-center space-y-2">
         <p className="text-[11px] text-muted tracking-[0.15em]">
-          {fileInfo.description.toUpperCase()} • {formatFileSize(fileData.file_size)}
+          {isNote ? 'SECURE NOTE' : fileInfo.description.toUpperCase()} • {formatFileSize(fileData.file_size)}
         </p>
       </div>
 
@@ -90,13 +98,23 @@ function FileCard({
         </div>
 
         {/* Action */}
-        {state === 'ready' && (
+        {state === 'ready' && !isNote && (
           <button
             onClick={handleDownload}
             className="ghost-btn-accent w-full py-3 text-[11px] tracking-[0.2em] border flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             [ DOWNLOAD ]
+          </button>
+        )}
+
+        {state === 'ready' && isNote && (
+          <button
+            onClick={handleDownload}
+            className="ghost-btn-accent w-full py-3 text-[11px] tracking-[0.2em] border flex items-center justify-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            [ VIEW NOTE ]
           </button>
         )}
 
@@ -136,7 +154,7 @@ function FileCard({
           </div>
         )}
 
-        {state === 'complete' && (
+        {state === 'complete' && !isNote && (
           <div className="flex flex-col items-center gap-1.5 py-3">
             <div className="flex items-center gap-3">
               <Check className="w-4 h-4 text-accent" />
@@ -151,6 +169,64 @@ function FileCard({
               className="text-[10px] text-muted tracking-[0.1em]"
               scrambleDuration={1000}
             />
+          </div>
+        )}
+
+        {state === 'complete' && isNote && noteText && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Check className="w-4 h-4 text-accent" />
+              <ScrambleText
+                text="DECRYPTION_COMPLETE"
+                className="text-[11px] text-accent tracking-[0.15em]"
+                scrambleDuration={800}
+              />
+            </div>
+            {/* Terminal-style note display */}
+            <div className="border border-border bg-[#0d1117] rounded-sm overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <span className="text-[10px] text-muted tracking-[0.1em]">SECURE NOTE</span>
+                <span className="text-[10px] text-muted">{noteText.length} chars</span>
+              </div>
+              <pre className="p-4 text-[11px] text-fg font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                {noteText}
+              </pre>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopyNote}
+                className="ghost-btn-accent flex-1 py-2 text-[11px] tracking-[0.15em] border flex items-center justify-center gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    COPIED
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    COPY
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([noteText], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = fileData.file_name;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="ghost-btn flex-1 py-2 text-[11px] tracking-[0.15em] border flex items-center justify-center gap-2"
+              >
+                <Download className="w-3 h-3" />
+                DOWNLOAD
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -173,6 +249,8 @@ export default function DownloadPage({
   const { id } = use(params);
   const [state, setState] = useState<PageState>('loading');
   const [fileData, setFileData] = useState<FileMetadata | null>(null);
+  const [noteText, setNoteText] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState('--:--:--');
   const [progress, setProgress] = useState(100);
@@ -287,23 +365,40 @@ export default function DownloadPage({
       const encryptedBuffer = await blob.arrayBuffer();
       const decryptedBuffer = await decryptFile(encryptedBuffer, key);
 
-      const decryptedBlob = new Blob([decryptedBuffer]);
-      const url = URL.createObjectURL(decryptedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileData.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setState('complete');
+      // Check if it's a note (text file)
+      const isNote = fileData.file_name.toLowerCase().endsWith('.txt');
+      
+      if (isNote) {
+        // Display note inline
+        const text = new TextDecoder().decode(decryptedBuffer);
+        setNoteText(text);
+        setState('complete');
+      } else {
+        // Download file
+        const decryptedBlob = new Blob([decryptedBuffer]);
+        const url = URL.createObjectURL(decryptedBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileData.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setState('complete');
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'DECRYPTION_FAILED: INVALID KEY'
       );
       setState('error');
     }
+  };
+
+  const handleCopyNote = async () => {
+    if (!noteText) return;
+    await navigator.clipboard.writeText(noteText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -426,7 +521,10 @@ export default function DownloadPage({
             <FileCard
               state={state}
               fileData={fileData}
+              noteText={noteText}
+              copied={copied}
               handleDownload={handleDownload}
+              handleCopyNote={handleCopyNote}
             />
           </>
         )}
