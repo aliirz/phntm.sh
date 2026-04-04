@@ -187,11 +187,11 @@ export default function Home() {
       {/* Hero Section */}
       <section className="flex-shrink-0 px-6 pt-12 pb-8 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-[0.1em] mb-4">
-          SEND FILES THAT DISAPPEAR
+          SEND IT. IT DISAPPEARS.
         </h1>
         <p className="text-[13px] text-muted tracking-[0.05em] leading-relaxed max-w-md mx-auto">
           No account. No trace. No surveillance.<br />
-          Your files are encrypted before they leave your device.
+          Files, notes, credentials — encrypted before they leave your device.
         </p>
       </section>
 
