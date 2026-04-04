@@ -21,7 +21,7 @@
 
 ---
 
-PHNTM is an encrypted, self-destructing file sharing tool. Files are encrypted in your browser before they leave your machine. The server only ever touches ciphertext. No accounts. No tracking. No logs. Files are permanently destroyed when the timer runs out.
+PHNTM is an encrypted, self-destructing file and note sharing tool. Files and notes are encrypted in your browser before they leave your machine. The server only ever touches ciphertext. No accounts. No tracking. No logs. Everything is permanently destroyed when the timer runs out.
 
 Think of it as a dead drop — you leave the package, share the coordinates, and walk away.
 
@@ -64,7 +64,7 @@ You'll need a [Supabase](https://supabase.com) project (free tier works). Run `s
 
 | | Status |
 |---|---|
-| **File contents** | Encrypted client-side with AES-256-GCM. Server stores only ciphertext. |
+| **File/Note contents** | Encrypted client-side with AES-256-GCM. Server stores only ciphertext. |
 | **Decryption keys** | Exist only in the URL fragment. Never transmitted to any server. |
 | **File names** | Stored server-side so recipients can save files correctly. Purged on expiry. |
 | **IP addresses** | Not logged by the application. Hosting infra may generate standard access logs. |
