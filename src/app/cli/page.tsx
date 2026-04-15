@@ -253,7 +253,7 @@ export default function CLIPage() {
       {/* Status Line */}
       <footer className="px-6 h-10 flex items-center justify-between border-t border-border shrink-0">
         <p className="text-[11px] text-muted tracking-[0.1em]">
-          PLATFORM: CLI v0.1.0 — GO BINARY — ZERO DEPENDENCIES
+          PLATFORM: CLI v0.2.2 — GO BINARY — ZERO DEPENDENCIES
         </p>
         <AboutModal />
       </footer>

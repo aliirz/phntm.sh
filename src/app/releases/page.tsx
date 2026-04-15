@@ -8,6 +8,18 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: '0.2.2',
+    date: '2026-04-15',
+    title: 'Release Pipeline Fix',
+    changes: [
+      'Fix: Release binaries now upload correctly to GitHub',
+      'Fix: Dockerfile updated for goreleaser compatibility',
+      'Note: Docker builds temporarily disabled (pending Docker Hub credentials)',
+    ],
+    cli: true,
+    web: false,
+  },
+  {
     version: '0.2.1',
     date: '2026-04-04',
     title: 'Secure Notes',
