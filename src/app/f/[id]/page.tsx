@@ -25,6 +25,7 @@ import { importKey, decryptFile } from '@/lib/streaming-encryption';
 import { formatFileSize } from '@/lib/utils';
 import { ScrambleText } from '@/components/ScrambleText';
 import { getFileInfo } from '@/lib/file-info';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type FileMetadata = {
   id: string;
@@ -183,7 +184,7 @@ function FileCard({
               />
             </div>
             {/* Terminal-style note display */}
-            <div className="border border-border bg-[#0d1117] rounded-sm overflow-hidden">
+            <div className="border border-border bg-bg rounded-sm overflow-hidden">
               <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                 <span className="text-[10px] text-muted tracking-[0.1em]">SECURE NOTE</span>
                 <span className="text-[10px] text-muted">{noteText.length} chars</span>
@@ -425,6 +426,7 @@ export default function DownloadPage({
             </span>
           )}
           <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -493,7 +495,7 @@ export default function DownloadPage({
             {/* Context banner for first-time recipients */}
             {!bannerDismissed && state === 'ready' && (
               <div className="w-full max-w-md mb-4">
-                <div className="border border-border/60 bg-[#0a0a0a] px-5 py-4 relative">
+                <div className="border border-border/60 bg-bg px-5 py-4 relative">
                   <button
                     onClick={dismissBanner}
                     className="absolute top-3 right-3 text-muted hover:text-fg"

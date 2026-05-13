@@ -167,7 +167,7 @@ function AboutContent() {
             military-grade authenticated encryption. A unique 256-bit key is generated
             for every file. The key never touches our servers.
           </p>
-          <p className="font-mono text-[10px] text-fg/60 py-2 px-3 bg-white/[0.02] border border-border">
+          <p className="font-mono text-[10px] text-fg/60 py-2 px-3 bg-fg/[0.02] border border-border">
             ENCRYPT → [AES-256-GCM + random IV] → UPLOAD CIPHERTEXT<br />
             DOWNLOAD → [CIPHERTEXT + KEY FROM URL#] → DECRYPT IN BROWSER
           </p>
@@ -365,7 +365,7 @@ function PrivacyContent() {
           ▸ SECTION 02 — WHAT WE COLLECT
         </div>
         <div className="text-muted border-l border-border pl-4 space-y-2">
-          <p className="font-mono text-[10px] text-fg/60 py-2 px-3 bg-white/[0.02] border border-border">
+          <p className="font-mono text-[10px] text-fg/60 py-2 px-3 bg-fg/[0.02] border border-border">
             FILE CONTENTS: &nbsp;&nbsp;&nbsp;NEVER (zero-knowledge)<br />
             FILE NAMES: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STORED (for recipient download)<br />
             DECRYPTION KEYS: NEVER (URL fragment only)<br />

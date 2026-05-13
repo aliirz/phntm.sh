@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: 'Releases — PHNTM',
@@ -100,6 +101,7 @@ export default function ReleasesPage() {
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
           <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
           <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="hover:text-accent">[ SOURCE ]</a>
+          <ThemeToggle />
         </div>
       </header>
 

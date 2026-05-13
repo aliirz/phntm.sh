@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Terminal, Copy, Check, Download, ArrowRight } from 'lucide-react';
 import { AboutModal } from '@/components/AboutModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const INSTALL_CMD = 'curl -sL https://phntm.sh/install | sh';
 
@@ -66,6 +67,7 @@ export default function CLIPage() {
         </Link>
         <div className="flex gap-6 text-[11px] text-muted tracking-[0.15em]">
           <span className="hidden sm:inline">[ CLI ]</span>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -134,7 +136,7 @@ export default function CLIPage() {
               ))}
             </div>
 
-            <div className="border border-border bg-[#0d0d0d] overflow-hidden">
+            <div className="border border-border bg-bg overflow-hidden">
               {/* Terminal title bar */}
               <div className="flex items-center gap-2 px-4 py-2 border-b border-border/50">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />

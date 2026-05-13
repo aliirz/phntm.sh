@@ -7,6 +7,7 @@ import { ScrambleText } from '@/components/ScrambleText';
 import { AboutModal } from '@/components/AboutModal';
 import { generateKey, exportKey, encryptFileStream } from '@/lib/streaming-encryption';
 import { formatFileSize } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type ExpiryOption = { label: string; tag: string; hours: number };
 type UploadMode = 'file' | 'text';
@@ -181,6 +182,7 @@ export default function Home() {
           <Link href="/cli" className="hover:text-accent">[ CLI ]</Link>
           <Link href="/releases" className="hover:text-accent">[ RELEASES ]</Link>
           <a href="https://github.com/aliirz/phntm.sh" target="_blank" rel="noopener noreferrer" className="hover:text-accent">[ SOURCE ]</a>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -367,7 +369,7 @@ export default function Home() {
               <>
                 {/* Terminal-style textarea */}
                 <div className="w-full max-w-md">
-                  <div className="border border-border bg-[#0d1117] rounded-sm overflow-hidden">
+                  <div className="border border-border bg-bg rounded-sm overflow-hidden">
                     <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
                       <div className="w-2 h-2 rounded-full bg-red-500/80" />
                       <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
@@ -564,7 +566,7 @@ export default function Home() {
       </section>
 
       {/* Use Cases Section */}
-      <section className="flex-shrink-0 px-6 py-10 bg-[#0a0a0a]">
+      <section className="flex-shrink-0 px-6 py-10 bg-bg">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-[11px] text-muted tracking-[0.2em] mb-6">
             BUILT FOR
